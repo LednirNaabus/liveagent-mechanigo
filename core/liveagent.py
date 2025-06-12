@@ -17,6 +17,8 @@ class LiveAgentClient:
         self.session: Optional[aiohttp.ClientSession] = None
         self.agent: Optional['LiveAgentClient.Agent'] = None
         self.ticket: Optional['LiveAgentClient.Ticket'] = None
+        self.user: Optional['LiveAgentClient.User'] = None
+        self.tag: Optional['LiveAgentClient.Tag'] = None
 
     def default_headers(self):
         return {
@@ -39,6 +41,8 @@ class LiveAgentClient:
             self.session = aiohttp.ClientSession()
             self.agent = self.Agent(self.BASE_URL, self.api_key, self.session, self.default_headers())
             self.ticket = self.Ticket(self.BASE_URL, self.api_key, self.session, self.default_headers())
+            self.user = self.User(self.BASE_URL, self.api_key, self.session, self.default_headers())
+            self.tag = self.Tag(self.BASE_URL, self.api_key, self.session, self.default_headers())
     
     async def close_session(self):
         if self.session:
@@ -46,6 +50,8 @@ class LiveAgentClient:
             self.session = None
             self.agent = None
             self.ticket = None
+            self.user = None
+            self.tag = None
 
     async def ping(self) -> tuple[bool, dict]:
         if self.session is None:
@@ -151,3 +157,31 @@ class LiveAgentClient:
             except Exception as e:
                 logging.error(f"Exception occured in 'fetch_tickets()': {e}")
                 traceback.print_exc()
+
+    class User(_BaseResource):
+        async def get_user(self, user_id: str) -> pd.DataFrame:
+            try:
+                async with self.session.get(
+                    f"{self.base_url}/users/{user_id}",
+                    headers=self.headers
+                ) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                return pd.DataFrame(data)
+            except aiohttp.ClientError as e:
+                logging.error(f"Error getting user {user_id}: {e}")
+                raise
+
+    class Tag(_BaseResource):
+        async def fetch_tags(self) -> pd.DataFrame:
+            try:
+                async with self.session.get(
+                    f"{self.base_url}/tags",
+                    headers=self.headers
+                ) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                return pd.DataFrame(data)
+            except aiohttp.ClientError as e:
+                logging.error(f"Error getting tags: {e}")
+                raise
