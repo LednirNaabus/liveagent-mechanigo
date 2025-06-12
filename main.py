@@ -1,6 +1,6 @@
+import os
 import json
 import asyncio
-import aiohttp
 import pandas as pd
 from config import config
 from core.liveagent import LiveAgentClient
@@ -11,8 +11,20 @@ async def main():
         success, ping_response = await client.ping()
         if success:
             print(f"Ping to {client.BASE_URL} successful.")
-            user = await client.get_user("00054iwg")
-            print(user)
+            filters = json.dumps([
+                ["date_changed", "D>=", "2025-01-01 00:00:00"]
+            ])
+            ticket_payload = {
+                "_perPage": 10,
+                "_filters": filters
+            }
+            tickets = await client.ticket.fetch_tickets(ticket_payload,1)
+            ticket_messages = await client.ticket.fetch_ticket_message(tickets, 1)
+            file_name = os.path.join('csv', "ticket_messages.csv")
+            ticket_messages.to_csv(file_name, index=False)
+            # print(ticket_messages)
+            # ticket_messages = await client.ticket.fetch_ticket_message(tickets, 5)
+            # print(ticket_messages)
             # tags = await client.fetch_tags()
             # print(tags)
             # agent = await client.agent.get_agents(100)

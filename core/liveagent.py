@@ -183,3 +183,54 @@ class LiveAgentClient:
             except Exception as e:
                 logging.error(f"Exception occured in 'fetch_tickets()': {e}")
                 traceback.print_exc()
+
+        async def fetch_ticket_message(self, ticket_payload: dict, max_pages: int = 5) -> pd.DataFrame:
+            ticket_ids = ticket_payload.get("id", [])
+            ticket_owner_names = ticket_payload.get("owner_name", [])
+            ticket_message_all = {
+                "ticket_id": [],
+                "owner_name": [],
+                "agent_id": [],
+                "id": [],
+                "userid": [],
+                "datecreated": [],
+                # "sender_name": [],
+                # "receiver_name": [],
+                # "send_type": [],
+                # "receiver_type": []
+            }
+
+            message_payload = {
+                "_page": 1,
+                "_perPage": 10
+            }
+
+            temp_client = self._get_temp_client()
+            try:
+                for ticket_id, ticket_owner_name in tqdm(zip(ticket_ids, ticket_owner_names), total=len(ticket_ids), desc="Fetching ticket messages"):
+                    ticket_messages_url = f"{self.base_url}/tickets/{ticket_id}/messages"
+                    ticket_messages_payload = message_payload.copy()
+                    
+                    data = await temp_client.paginate(
+                        url=ticket_messages_url,
+                        payload=ticket_messages_payload,
+                        headers=self.headers,
+                        max_pages=max_pages
+                    )
+
+                    for message_group in data:
+                        for message in message_group["messages"]:
+                            ticket_message_all["ticket_id"].append(ticket_id)
+                            ticket_message_all["owner_name"].append(ticket_owner_name)
+                            ticket_message_all["agent_id"].append(message.get("userid"))
+                            ticket_message_all["id"].append(message_group.get("id"))
+                            ticket_message_all["userid"].append(message.get("userid"))
+                            ticket_message_all["datecreated"].append(message_group.get("datecreated"))
+                            # ticket_message_all["sender_name"].append(ticket_owner_name)
+                            # ticket_message_all["receiver_name"].append()
+                            # ticket_message_all["sender_type"].append()
+                            # ticket_message_all["receiver_type"].append()
+            except Exception as e:
+                logging.error(f"Error fetching ticket messages: {e}")
+            finally:
+                return pd.DataFrame(ticket_message_all)
