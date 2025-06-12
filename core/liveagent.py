@@ -46,8 +46,6 @@ class LiveAgentClient:
             self.session = None
             self.agent = None
             self.ticket = None
-            self.user = None
-            self.tag = None
 
     async def ping(self) -> tuple[bool, dict]:
         if self.session is None:
