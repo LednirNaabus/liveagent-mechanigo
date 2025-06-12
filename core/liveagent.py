@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(format = '%(asctime)s-%(levelname)s-%(message)s', datefmt='%Y-%m-%d %H:%M%:S', level=logging.INFO)
 
 class LiveAgentClient:
     def __init__(self, api_key: str):
@@ -30,7 +30,7 @@ class LiveAgentClient:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            logger.error(f"Exception in LiveAgentClient context: {exc_type.__name__}: {exc_val}")
+            logging.error(f"Exception in LiveAgentClient context: {exc_type.__name__}: {exc_val}")
         await self.close_session()
         return False
 
@@ -59,11 +59,11 @@ class LiveAgentClient:
                     response_json = {"message": "Non-JSON response"}
                 return status_ok, response_json
         except aiohttp.ClientError as e:
-            logger.error(f"'LiveAgentClient.ping()': {e}")
+            logging.error(f"'LiveAgentClient.ping()': {e}")
             traceback.print_exc()
             return False, {}
         except Exception as e:
-            logger.error(f"Unexpected error in 'ping()': {e}")
+            logging.error(f"Unexpected error in 'ping()': {e}")
             traceback.print_exc()
             return False, {"error": str(e)}
 
@@ -91,7 +91,7 @@ class LiveAgentClient:
                     all_data.extend(data)
                     page += 1
                 except aiohttp.ClientError as e:
-                    logger.error(f"Error during pagination on page {page}: {e}")
+                    logging.error(f"Error during pagination on page {page}: {e}")
                     break
         return all_data
 
@@ -149,5 +149,5 @@ class LiveAgentClient:
 
                 return pd.DataFrame(ticket_data)
             except Exception as e:
-                logger.error(f"Exception occured in 'fetch_tickets()': {e}")
+                logging.error(f"Exception occured in 'fetch_tickets()': {e}")
                 traceback.print_exc()
