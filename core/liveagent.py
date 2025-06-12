@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 from typing import Optional
 
-logging.basicConfig(format = '%(asctime)s-%(levelname)s-%(message)s', datefmt='%Y-%m-%d %H:%M%:S', level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class LiveAgentClient:
     def __init__(self, api_key: str):

@@ -1,5 +1,4 @@
 import logging
-import traceback
 import pandas as pd
 from typing import List
 from google.cloud import bigquery
@@ -8,7 +7,7 @@ from google.cloud.bigquery import SchemaField
 
 from config import config
 
-logging.basicConfig(format = '%(asctime)s-%(levelname)s-%(message)s', datefmt='%Y-%m-%d %H:%M%:S', level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 def get_client():
     return {
@@ -25,6 +24,7 @@ def ensure_dataset(project_id: str, dataset_name: str, client: bigquery.Client):
         dataset = bigquery.Dataset(dataset_id)
         dataset.location = "asia-southeast1"
         client.create_dataset(dataset, timeout=30)
+        logging.error(f"Exception when checking dataset: {NotFound}")
         logging.info(f"Created dataset: {dataset_id}")
 
 def ensure_table(project_id: str, dataset_name: str, table_name: str, client: bigquery.Client, schema=None):
@@ -35,6 +35,7 @@ def ensure_table(project_id: str, dataset_name: str, table_name: str, client: bi
     except NotFound:
         table = bigquery.Table(table_id, schema=schema) if schema else bigquery.Table(table_id)
         client.create_table(table)
+        logging.error(f"Exception when checking table: {NotFound}")
         logging.info(f"Created table: {table_id}")
 
 def generate_schema(df: pd.DataFrame) -> List[SchemaField]:
@@ -99,7 +100,6 @@ def load_data_to_bq(df: pd.DataFrame, project_id: str, dataset_name: str, table_
         logging.info(f"Successfully loaded {df.shape[0]} rows into {table_id}.")
     except Exception as e:
         logging.error(f"Error uploading data to BigQuery: {e}")
-        traceback.print_exc()
         raise
 
 def sql_query_bq(query: str) -> pd.DataFrame:
