@@ -1,5 +1,6 @@
 env/
 __pycache__/
 misc/
+csv/
 __init__.py
 .env
