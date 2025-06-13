@@ -49,12 +49,28 @@ async def update_tags(table_name: str):
             'status': 'error'
         })
 
-@app.post("/mechanigo-liveagent/update-tickets")
-async def update_tickets():
+@app.post("/mechanigo-liveagent/update-tickets/{table_name}")
+async def update_tickets(table_name: str):
     """ppppp"""
     try:
-        tickets = await extract_tickets()
+        now = pd.Timestamp.now(tz="UTC").astimezone(pytz.timezone("Asia/Manila"))
+        date = now - pd.Timedelta(hours=6)
+        logging.info(f"Date and time of execution: {date}")
+        tickets = await extract_tickets(date, table_name)
         return JSONResponse(tickets)
+    except Exception as e:
+        logging.error(f"Exception occured while updating tickets: {e}")
+        return JSONResponse(content={
+            'error': str(e),
+            'status': 'error'
+        })
+
+@app.post("/mechanigo-liveagent/update-ticket-messages/{table_name}")
+async def update_ticket_messages(table_name: str):
+    """
+    """
+    try:
+        return JSONResponse(table_name)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
         return JSONResponse(content={
