@@ -5,6 +5,7 @@ import pandas as pd
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from core.extract_tags import extract_and_load_tags
+from core.extract_tickets import extract_tickets
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -42,6 +43,20 @@ async def update_tags(table_name: str):
         tags = await extract_and_load_tags(table_name)
         return JSONResponse(tags)
     except Exception as e:
+        logging.error(f"Exception occured while updating tickets: {e}")
+        return JSONResponse(content={
+            'error': str(e),
+            'status': 'error'
+        })
+
+@app.post("/mechanigo-liveagent/update-tickets")
+async def update_tickets():
+    """ppppp"""
+    try:
+        tickets = await extract_tickets()
+        return JSONResponse(tickets)
+    except Exception as e:
+        logging.error(f"Exception occured while updating tickets: {e}")
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'

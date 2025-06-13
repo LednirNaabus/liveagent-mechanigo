@@ -19,9 +19,10 @@ async def main():
                 "_filters": filters
             }
             tickets = await client.ticket.fetch_tickets(ticket_payload,1)
-            ticket_messages = await client.ticket.fetch_ticket_message(tickets, 1)
-            file_name = os.path.join('csv', "ticket_messages.csv")
-            ticket_messages.to_csv(file_name, index=False)
+            # ticket_messages = await client.ticket.fetch_ticket_message(tickets, 1)
+            file_name = os.path.join('csv', "tickets-2025-delete-later.csv")
+            tickets.to_csv(file_name, index=False)
+            # ticket_messages.to_csv(file_name, index=False)
             # print(ticket_messages)
             # ticket_messages = await client.ticket.fetch_ticket_message(tickets, 5)
             # print(ticket_messages)
