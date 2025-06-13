@@ -14,7 +14,7 @@ from utils.date_utils import set_filter, set_timezone, format_date_col
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-async def extract_tickets(date: pd.Timestamp, table_name: str):
+async def extract_and_load_tickets(date: pd.Timestamp, table_name: str):
     filters = set_filter(date)
     ticket_payload = {
         "_perPage": 10,
@@ -76,5 +76,5 @@ async def extract_tickets(date: pd.Timestamp, table_name: str):
             logging.error(f"Exception occured while fetching tickets: {e}")
             raise
 
-async def extract_ticket_messages(table_name: str):
+async def extract_and_load_ticket_messages(table_name: str):
     pass
