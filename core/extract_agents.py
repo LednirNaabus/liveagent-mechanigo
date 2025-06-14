@@ -1,34 +1,31 @@
+import json
 import logging
+import pandas as pd
 from config import config
-from utils.df_utils import fill_nan_values
 from utils.bq_utils import generate_schema, load_data_to_bq
 from core.liveagent import LiveAgentClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-async def extract_and_load_tags(table_name: str):
-    """
-    Function to extract and load tags to BigQuery.
-
-    Calls `fetch_tags()` from the `LiveAgentClient` class.
-    """
+async def extract_and_load_agents(table_name: str):
     try:
         async with LiveAgentClient(config.API_KEY) as client:
             success, response = await client.ping()
             if success:
-                tags = await client.fetch_tags()
-                tags = fill_nan_values(tags)
+                agents = await client.agent.get_agents(100)
+                logging.info(f"Fetched response of length {len(agents)}.")
                 logging.info("Generating schema and loading data to BigQuery...")
-                schema = generate_schema(tags)
+                agents_df = pd.DataFrame(agents)
+                schema = generate_schema(agents_df)
                 load_data_to_bq(
-                    tags,
+                    agents_df,
                     config.GCLOUD_PROJECT_ID,
                     config.BQ_DATASET_NAME,
                     table_name,
                     "WRITE_APPEND",
                     schema
                 )
-                return tags.to_dict(orient="records")
+                return agents
             else:
                 logging.error(f"Ping to {client.BASE_URL}/ping failed. Response: {response}")
     except Exception as e:
