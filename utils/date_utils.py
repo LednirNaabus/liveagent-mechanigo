@@ -1,14 +1,27 @@
 import json
 import pandas as pd
+from enum import Enum
 
-def set_filter(date: pd.Timestamp):
+class FilterField(str, Enum):
+    DATE_CREATED = "date_created"
+    DATE_CHANGED = "date_changed"
+
+def set_filter(date: pd.Timestamp, filter_field: FilterField = FilterField.DATE_CREATED):
     """
+    Returns a JSON-encoded filter for a 6-hour time window based on the specified field.
+
+    Parameters:
+        date (`pd.Timestamp`): Reference datetime.
+        filter_field (`FilterField`): Enum that is either `DATE_CREATED` or `DATE_CHANGED`.
+
+    Returns:
+        str: JSON-encoded filter.
     """
     start = date.floor('h')
     end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
     return json.dumps([
-        ["date_created", "D>=", f"{start}"],
-        ["date_created", "D<=", f"{end}"]
+        [filter_field.value, "D>=", f"{start}"],
+        [filter_field.value, "D<=", f"{end}"]
     ])
 
 def set_timezone(df: pd.DataFrame, *columns: str, target_tz: str) -> pd.DataFrame:
