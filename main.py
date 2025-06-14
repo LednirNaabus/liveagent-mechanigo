@@ -12,7 +12,8 @@ async def main():
         if success:
             print(f"Ping to {client.BASE_URL} successful.")
             filters = json.dumps([
-                ["date_changed", "D>=", "2025-01-01 00:00:00"]
+                ["date_changed", "D>=", "2025-01-01 00:00:00"],
+                ["date_changed", "D<=", "2025-01-31 23:59:59"]
             ])
             ticket_payload = {
                 "_perPage": 10,
