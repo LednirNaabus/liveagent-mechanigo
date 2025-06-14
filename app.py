@@ -2,10 +2,10 @@ import os
 import pytz
 import logging
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from core.extract_tags import extract_and_load_tags
-from core.extract_tickets import extract_and_load_tickets
+from core.extract_tickets import extract_and_load_tickets_incremental, extract_and_load_tickets_initial
 from core.extract_agents import extract_and_load_agents
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -65,13 +65,20 @@ async def update_tags(table_name: str):
         })
 
 @app.post("/mechanigo-liveagent/update-tickets/{table_name}")
-async def update_tickets(table_name: str):
-    """ppppp"""
+async def update_tickets(table_name: str, is_initial: bool = Query(False)):
+    """
+    """
     try:
-        now = pd.Timestamp.now(tz="UTC").astimezone(pytz.timezone("Asia/Manila"))
-        date = now - pd.Timedelta(hours=6)
-        logging.info(f"Date and time of execution: {date}")
-        tickets = await extract_and_load_tickets(date, table_name)
+        if is_initial:
+            logging.info("Running initial ticket extraction...")
+            date = pd.Timestamp("2025-01-01")
+            tickets = await extract_and_load_tickets_initial(date, table_name)
+            pass
+        else:
+            now = pd.Timestamp.now(tz="UTC").astimezone(pytz.timezone("Asia/Manila"))
+            date = now - pd.Timedelta(hours=6)
+            logging.info(f"Date and time of execution: {date}")
+            tickets = await extract_and_load_tickets_incremental(date, table_name)
         return JSONResponse(tickets)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
