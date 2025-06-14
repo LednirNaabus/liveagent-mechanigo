@@ -41,7 +41,7 @@ def set_timezone(df: pd.DataFrame, *columns: str, target_tz: str) -> pd.DataFram
         )
     return df
 
-def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d") -> pd.DataFrame:
+def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
     """
     """
     for column in columns:
