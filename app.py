@@ -72,7 +72,8 @@ async def update_tickets(table_name: str, is_initial: bool = Query(False)):
     try:
         if is_initial:
             logging.info("Running initial ticket extraction...")
-            date = pd.Timestamp("2025-01-01")
+            date = pd.Timestamp("2025-05-01")
+            logging.info(f"Date to be extracted: {date}")
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CREATED)
         else:
             now = pd.Timestamp.now(tz="UTC").astimezone(pytz.timezone("Asia/Manila"))

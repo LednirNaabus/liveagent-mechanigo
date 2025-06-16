@@ -15,7 +15,7 @@ from utils.date_utils import set_filter, set_timezone, format_date_col, FilterFi
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 10) -> list[dict[str, Any]]:
+async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 100) -> list[dict[str, Any]]:
     """
     """
     filters = set_filter(date, filter_field=filter_field)
@@ -26,14 +26,15 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
     }
 
     if filter_field == FilterField.DATE_CREATED:
-        ticket_payload["_sortDir"] = "DESC"
+        ticket_payload["_sortDir"] = "ASC"
 
     async with LiveAgentClient(config.API_KEY) as client:
         success, ping_response = await client.ping()
         try:
             if success:
                 logging.info(f"Ping to '{client.BASE_URL}/ping' successful.")
-                tickets = await client.ticket.fetch_tickets(ticket_payload, 1)
+                logging.info(f"Extracting using the following filter: {ticket_payload['_filters']}")
+                tickets = await client.ticket.fetch_tickets(ticket_payload, 100)
                 # Add datetime_extracted column
                 tickets["datetime_extracted"] = pd.Timestamp.now().strftime("%Y-%m-%dT%H:%M:%S")
                 tickets["datetime_extracted"] = pd.to_datetime(tickets["datetime_extracted"], errors="coerce")
