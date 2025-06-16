@@ -4,9 +4,11 @@ import logging
 import pandas as pd
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
+from config import config
 from utils.date_utils import FilterField
+from utils.bq_utils import sql_query_bq
 from core.extract_tags import extract_and_load_tags
-from core.extract_tickets import extract_and_load_tickets
+from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
 from core.extract_agents import extract_and_load_agents
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -72,7 +74,7 @@ async def update_tickets(table_name: str, is_initial: bool = Query(False)):
     try:
         if is_initial:
             logging.info("Running initial ticket extraction...")
-            date = pd.Timestamp("2025-05-01")
+            date = pd.Timestamp("2025-05-01") # Manually change
             logging.info(f"Date to be extracted: {date}")
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CREATED)
         else:
@@ -93,7 +95,15 @@ async def update_ticket_messages(table_name: str):
     """
     """
     try:
-        return JSONResponse(table_name)
+        tickets_table_name = "tickets"
+        query = f"""
+        SELECT id, owner_name, agentid
+        FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
+        LIMIT 10
+        """
+        tickets_df = sql_query_bq(query)
+        messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
+        return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
         return JSONResponse(content={

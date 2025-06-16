@@ -4,9 +4,7 @@ import json
 import aiohttp
 import logging
 import pandas as pd
-from tqdm import tqdm
-from typing import Literal, Any
-from datetime import datetime
+from typing import Any
 from config import config
 from core.liveagent import LiveAgentClient
 from utils.df_utils import fill_nan_values
@@ -14,6 +12,7 @@ from utils.bq_utils import generate_schema, load_data_to_bq
 from utils.date_utils import set_filter, set_timezone, format_date_col, FilterField
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+MNL_TZ = pytz.timezone('Asia/Manila')
 
 async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 100) -> list[dict[str, Any]]:
     """
@@ -48,7 +47,7 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
                     "date_due",
                     "date_deleted",
                     "date_resolved",
-                    target_tz=pytz.timezone("Asia/Manila")
+                    target_tz=MNL_TZ
                 )
                 # Normalize custom fields
                 tickets["custom_fields"] = tickets["custom_fields"].apply(
@@ -88,5 +87,61 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
             logging.error(f"Exception occured while extracting tickets: {e}")
             raise
 
-async def extract_and_load_ticket_messages(table_name: str):
-    pass
+async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name: str, per_page: int = 100):
+    """
+    """
+    tickets_data = {
+        "id": tickets_df['id'].tolist(),
+        "owner_name": tickets_df['owner_name'].tolist(),
+        "agentid": tickets_df['agentid'].tolist(),
+    }
+
+    async with LiveAgentClient(config.API_KEY, config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME) as client:
+        success, ping_response = await client.ping()
+        try:
+            if success:
+                messages_df = await client.ticket.fetch_ticket_message(
+                    tickets_data,
+                    max_pages=1,
+                    insert_to_bq=False,
+                    batch_size=500
+                )
+                # Add datetime_extracted column
+                messages_df["datetime_extracted"] = pd.Timestamp.now().strftime("%Y-%m-%dT%H:%M:%S")
+                messages_df["datetime_extracted"] = pd.to_datetime(messages_df["datetime_extracted"], errors="coerce")
+                messages_df = set_timezone(
+                    messages_df,
+                    "datecreated",
+                    "datefinished",
+                    "message_datecreated",
+                    target_tz=MNL_TZ
+                )
+                logging.info("Generating schema and loading data to BigQuery...")
+                schema = generate_schema(messages_df)
+                load_data_to_bq(
+                    messages_df,
+                    config.GCLOUD_PROJECT_ID,
+                    config.BQ_DATASET_NAME,
+                    table_name,
+                    "WRITE_TRUNCATE",
+                    schema
+                )
+                messages_df = format_date_col(
+                    messages_df,
+                    "datecreated",
+                    "datefinished",
+                    "message_datecreated",
+                    "datetime_extracted"
+                )
+                messages_df = fill_nan_values(messages_df)
+                # Populate users table from the collected ids when processing tickets and messages
+                logging.info(f"Processed {len(messages_df)} messages")
+                logging.info(f"Found {len(client.unique_userids)} unique user IDs")
+                # Temporary
+                await client.populate_users_from_collected_ids(batch_size=50)
+                return messages_df.to_dict(orient="records")
+            else:
+                logging.error(f"Ping to '{client.BASE_URL}/ping' failed. Response: {ping_response}")
+        except Exception as e:
+            logging.error(f"Exception occured while extracting ticket messages: {e}")
+            raise
