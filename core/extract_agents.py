@@ -1,11 +1,14 @@
+import pytz
 import json
 import logging
 import pandas as pd
 from config import config
 from utils.bq_utils import generate_schema, load_data_to_bq
+from utils.date_utils import set_timezone
 from core.liveagent import LiveAgentClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+MNL_TZ = pytz.timezone('Asia/Manila')
 
 async def extract_and_load_agents(table_name: str):
     try:
@@ -16,6 +19,11 @@ async def extract_and_load_agents(table_name: str):
                 logging.info(f"Fetched response of length {len(agents)}.")
                 logging.info("Generating schema and loading data to BigQuery...")
                 agents_df = pd.DataFrame(agents)
+                agents_df = set_timezone(
+                    agents_df,
+                    "last_pswd_change",
+                    target_tz=MNL_TZ
+                )
                 schema = generate_schema(agents_df)
                 load_data_to_bq(
                     agents_df,
