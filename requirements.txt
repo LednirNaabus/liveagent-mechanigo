@@ -9,6 +9,7 @@ certifi
 charset-normalizer
 click
 colorama
+db-dtypes
 dnspython
 email_validator
 fastapi
