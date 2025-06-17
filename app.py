@@ -2,6 +2,7 @@ import os
 import pytz
 import logging
 import pandas as pd
+from typing import Optional
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from config import config
@@ -82,13 +83,20 @@ async def update_tags(table_name: str):
         })
 
 @app.post("/mechanigo-liveagent/update-tickets/{table_name}")
-async def update_tickets(table_name: str, is_initial: bool = Query(False)):
+async def update_tickets(
+    table_name: str,
+    is_initial: bool = Query(False),
+    date: Optional[str] = Query(None, description="Optional date in YYYY-MM-DD format. **Important**: Date should be start of month (i.e., 2025-01-01, or 2025-12-01, etc.)")
+):
     """
     """
     try:
         if is_initial:
             logging.info("Running initial ticket extraction...")
-            date = pd.Timestamp("2025-05-01") # Manually change
+            if date:
+                date = pd.Timestamp(date)
+            else:
+                date = pd.Timestamp("2025-05-01") # Manually change
             logging.info(f"Date to be extracted: {date}")
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CREATED)
         else:

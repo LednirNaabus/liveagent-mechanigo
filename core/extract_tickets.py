@@ -73,10 +73,6 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
                     "datetime_extracted"
                 )
                 tickets = fill_nan_values(tickets)
-                # For logging/debugging purposes (dev or local branch)
-                if filter_field == FilterField.DATE_CREATED:
-                    file_name = os.path.join('csv', f"tickets-{date.date()}.csv")
-                    tickets.to_csv(file_name, index=False)
                 return tickets.to_dict(orient="records")
             else:
                 logging.error(f"Ping to '{client.BASE_URL}/ping' failed. Response: {ping_response}")
