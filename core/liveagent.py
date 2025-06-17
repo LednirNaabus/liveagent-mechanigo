@@ -298,6 +298,7 @@ class LiveAgentClient:
                     ticket['tags'] = ','.join(ticket['tags']) if ticket.get('tags') else ''
                     ticket['date_due'] = ticket.get('date_due')
                     ticket['date_deleted'] = ticket.get('date_deleted')
+                    ticket['date_resolved'] = ticket.get('date_resolved')
 
                 return pd.DataFrame(ticket_data)
             except Exception as e:

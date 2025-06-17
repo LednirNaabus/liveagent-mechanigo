@@ -103,34 +103,57 @@ async def main():
         status, response = await client.ping()
         print(f"API status: {status}, Response: {response}")
 
-        # ticket_payload = {
-        #     "_perPage": 10
-        # }
+        filters = json.dumps([
+            ["date_created", "D>=", "2025-01-02 08:03:02+08:00"],
+            ["date_created", "D<=", "2025-01-02 13:59:59+08:00"]
+        ])
 
-        # tickets_df = await client.ticket.fetch_tickets(ticket_payload, max_pages=2)
-        # print(f"Fetched {len(tickets_df)} tickets.")
-        query = f"""
-        SELECT id, owner_name, agentid
-        FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.tickets`
-        LIMIT 10
-        """
-        tickets_df = sql_query_bq(query)
-        print(tickets_df)
-        
-        tickets_data = {
-            "id": tickets_df['id'].tolist(),
-            "owner_name": tickets_df['owner_name'].tolist(),
-            "agentid": tickets_df['agentid'].tolist(),
+        ticket_payload = {
+            "_perPage": 10,
+            "_filters": filters
         }
 
-        messages_df = await client.ticket.fetch_ticket_message(
-            tickets_data,
-            max_pages=1,
-            insert_to_bq=False,
-            batch_size=500
-        )
+        tickets_df = await client.ticket.fetch_tickets(ticket_payload, max_pages=2)
+        tickets_df.to_csv("testing.csv", index=False)
+        # print(tickets_df.columns)
+        # tickets_df["datetime_extracted"] = pd.Timestamp.now().strftime("%Y-%m-%dT%H:%M:%S")
+        # tickets_df["datetime_extracted"] = pd.to_datetime(tickets_df["datetime_extracted"], errors="coerce")
+        # tickets_df = set_timezone(
+        #     tickets_df,
+        #     "date_created",
+        #     "date_changed",
+        #     "last_activity",
+        #     "last_activity_public",
+        #     "date_due",
+        #     "date_deleted",
+        #     "date_resolved",
+        #     target_tz=pytz.timezone('Asia/Manila')
+        # )
+        # print(tickets_df.head())
+        # print(tickets_df.columns)
+        # print(f"Fetched {len(tickets_df)} tickets.")
+        # query = f"""
+        # SELECT id, owner_name, agentid
+        # FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.tickets`
+        # LIMIT 10
+        # """
+        # tickets_df = sql_query_bq(query)
+        # print(tickets_df)
+        
+        # tickets_data = {
+        #     "id": tickets_df['id'].tolist(),
+        #     "owner_name": tickets_df['owner_name'].tolist(),
+        #     "agentid": tickets_df['agentid'].tolist(),
+        # }
 
-        print(messages_df.head())
+        # messages_df = await client.ticket.fetch_ticket_message(
+        #     tickets_data,
+        #     max_pages=1,
+        #     insert_to_bq=False,
+        #     batch_size=500
+        # )
+
+        # print(messages_df.head())
         # print("Generating schema and loading data to BigQuery...")
         # schema = generate_schema(messages_df)
         # load_data_to_bq(
@@ -141,7 +164,7 @@ async def main():
         #     "WRITE_APPEND",
         #     schema=schema
         # )
-        messages_df.to_csv("message-v2.csv", index=False)
+        # messages_df.to_csv("message-v2.csv", index=False)
 
         # print(f"Processed {len(messages_df)} messages")
         # print(f"Found {len(client.unique_userids)} unique user IDs")
