@@ -24,6 +24,7 @@ google-resumable-media
 googleapis-common-protos
 grpcio
 grpcio-status
+gunicorn
 h11
 httpcore
 httptools
