@@ -41,8 +41,8 @@ async def update_agents(table_name: str):
 async def update_users(table_name: str):
     try:
         logging.info("Extracting and loading users...")
-        z = await extract_and_load_users(table_name)
-        return JSONResponse(z)
+        users = await extract_and_load_users(table_name)
+        return JSONResponse(users)
     except Exception as e:
         logging.error(f"Exception occured while updating users: {e}")
         return JSONResponse(content={
