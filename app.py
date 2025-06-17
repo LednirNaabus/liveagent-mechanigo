@@ -9,7 +9,7 @@ from config import config
 from utils.date_utils import FilterField
 from utils.bq_utils import sql_query_bq
 from core.extract_tags import extract_and_load_tags
-from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
+from core.extract_tickets import extract_and_load_tickets, extract_and_load_tix_msgs
 from core.extract_agents import extract_and_load_agents
 from core.extract_users import extract_and_load_users
 
@@ -113,18 +113,36 @@ async def update_tickets(
         })
 
 @app.post("/mechanigo-liveagent/update-ticket-messages/{table_name}")
-async def update_ticket_messages(table_name: str):
+async def update_ticket_messages(
+    table_name: str,
+    is_initial: bool = Query(False),
+    date: Optional[str] = Query(None, description="Date of extraction in YYYY-MM-DD format.")
+):
     """
     """
     try:
-        tickets_table_name = "tickets"
-        query = f"""
-        SELECT id, owner_name, agentid
-        FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
-        LIMIT 10
-        """
-        tickets_df = sql_query_bq(query)
-        messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
+        # tickets_table_name = "tickets"
+        # query = f"""
+        # SELECT id, owner_name, agentid
+        # FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
+        # WHERE date_created BETWEEN '{date}'
+        # """
+        # tickets_df = sql_query_bq(query)
+        # messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
+        # return JSONResponse(messages)
+        if is_initial:
+            logging.info("Running initial ticket extraction...")
+            if date:
+                date = pd.Timestamp(date)
+            else:
+                date = pd.Timestamp("2025-01-01")
+            logging.info(f"Date to be extracted: {date}")
+            messages = await extract_and_load_tix_msgs(date, table_name)
+        else:
+            now = pd.Timestamp.now(tz='UTC').astimezone(pytz.timezone('Asia/Manila'))
+            date = now - pd.Timedelta(hours=6)
+            logging.info(f"Date and time of execution: {date}")
+            messages = await extract_and_load_tix_msgs(date, table_name)
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")

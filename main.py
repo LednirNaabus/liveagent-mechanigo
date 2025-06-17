@@ -104,17 +104,43 @@ async def main():
         print(f"API status: {status}, Response: {response}")
 
         filters = json.dumps([
-            ["date_created", "D>=", "2025-01-02 08:03:02+08:00"],
-            ["date_created", "D<=", "2025-01-02 13:59:59+08:00"]
+            ["date_created", "D>=", "2025-06-01 00:00:00"],
+            ["date_created", "D<=", "2025-06-17 15:59:59"]
         ])
 
         ticket_payload = {
-            "_perPage": 10,
+            "_perPage": 100,
             "_filters": filters
         }
 
-        tickets_df = await client.ticket.fetch_tickets(ticket_payload, max_pages=2)
-        tickets_df.to_csv("testing.csv", index=False)
+        tickets_df = await client.ticket.fetch_tickets(ticket_payload, max_pages=100)
+        tickets_df["datetime_extracted"] = pd.Timestamp.now().strftime("%Y-%m-%dT%H:%M:%S")
+        tickets_df["datetime_extracted"] = pd.to_datetime(tickets_df["datetime_extracted"], errors="coerce")
+        tickets_df = set_timezone(
+            tickets_df,
+            "date_created",
+            "date_changed",
+            "last_activity",
+            "last_activity_public",
+            "date_due",
+            "date_deleted",
+            "date_resolved",
+            target_tz=config.MNL_TZ
+        )
+        tickets_df["custom_fields"] = tickets_df["custom_fields"].apply(
+            lambda x: x[0] if isinstance(x, list) and len(x) == 1 and isinstance(x[0], dict) else None
+        )
+        # tickets_df.to_csv('tickets-testing.csv', index=False)
+        schema = generate_schema(tickets_df)
+        load_data_to_bq(
+            tickets_df,
+            config.GCLOUD_PROJECT_ID,
+            config.BQ_DATASET_NAME,
+            "tickets",
+            "WRITE_APPEND",
+            schema
+        )
+        # tickets_df.to_csv("tickets-testing.csv", index=False)
         # print(tickets_df.columns)
         # tickets_df["datetime_extracted"] = pd.Timestamp.now().strftime("%Y-%m-%dT%H:%M:%S")
         # tickets_df["datetime_extracted"] = pd.to_datetime(tickets_df["datetime_extracted"], errors="coerce")
