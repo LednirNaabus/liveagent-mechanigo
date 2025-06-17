@@ -1,7 +1,5 @@
 import os
 import pytz
-import json
-import aiohttp
 import logging
 import pandas as pd
 from typing import Any
@@ -12,7 +10,6 @@ from utils.bq_utils import generate_schema, load_data_to_bq
 from utils.date_utils import set_filter, set_timezone, format_date_col, FilterField
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-MNL_TZ = pytz.timezone('Asia/Manila')
 
 async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 100) -> list[dict[str, Any]]:
     """
@@ -47,7 +44,7 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
                     "date_due",
                     "date_deleted",
                     "date_resolved",
-                    target_tz=MNL_TZ
+                    target_tz=config.MNL_TZ
                 )
                 # Normalize custom fields
                 tickets["custom_fields"] = tickets["custom_fields"].apply(
@@ -114,7 +111,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                     "datecreated",
                     "datefinished",
                     "message_datecreated",
-                    target_tz=MNL_TZ
+                    target_tz=config.MNL_TZ
                 )
                 logging.info("Generating schema and loading data to BigQuery...")
                 schema = generate_schema(messages_df)
@@ -137,8 +134,6 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                 # Populate users table from the collected ids when processing tickets and messages
                 logging.info(f"Processed {len(messages_df)} messages")
                 logging.info(f"Found {len(client.unique_userids)} unique user IDs")
-                # Temporary
-                await client.populate_users_from_collected_ids(batch_size=50)
                 return messages_df.to_dict(orient="records")
             else:
                 logging.error(f"Ping to '{client.BASE_URL}/ping' failed. Response: {ping_response}")

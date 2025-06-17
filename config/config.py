@@ -1,11 +1,13 @@
 import os
 import json
+import pytz
 from dotenv import load_dotenv
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
 load_dotenv()
 
+MNL_TZ = pytz.timezone('Asia/Manila')
 API_KEY = os.getenv("API_KEY")
 CREDS_FILE = json.loads(os.getenv('CREDENTIALS'))
 SCOPE = [

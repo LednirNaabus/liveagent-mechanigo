@@ -8,7 +8,6 @@ from utils.date_utils import set_timezone
 from core.liveagent import LiveAgentClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-MNL_TZ = pytz.timezone('Asia/Manila')
 
 async def extract_and_load_agents(table_name: str):
     try:
@@ -22,7 +21,7 @@ async def extract_and_load_agents(table_name: str):
                 agents_df = set_timezone(
                     agents_df,
                     "last_pswd_change",
-                    target_tz=MNL_TZ
+                    target_tz=config.MNL_TZ
                 )
                 schema = generate_schema(agents_df)
                 load_data_to_bq(
