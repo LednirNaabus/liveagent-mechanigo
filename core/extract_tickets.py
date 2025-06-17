@@ -80,8 +80,11 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
             logging.error(f"Exception occured while extracting tickets: {e}")
             raise
 
-async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name: str, per_page: int = 100):
+async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name: str, per_page: int = 10):
     """
+    Accepts an SQL Query - with or without a date filter
+    Fetches the query (id, owner_name, agentid)
+    Processes each ticket and gets the ticket message
     """
     tickets_data = {
         "id": tickets_df['id'].tolist(),
@@ -95,7 +98,8 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
             if success:
                 messages_df = await client.ticket.fetch_ticket_message(
                     tickets_data,
-                    max_pages=1,
+                    max_pages=100,
+                    message_per_page=per_page,
                     insert_to_bq=False,
                     batch_size=500
                 )
@@ -116,7 +120,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                     config.GCLOUD_PROJECT_ID,
                     config.BQ_DATASET_NAME,
                     table_name,
-                    "WRITE_TRUNCATE",
+                    "WRITE_APPEND",
                     schema
                 )
                 messages_df = format_date_col(
@@ -127,7 +131,6 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                     "datetime_extracted"
                 )
                 messages_df = fill_nan_values(messages_df)
-                # Populate users table from the collected ids when processing tickets and messages
                 logging.info(f"Processed {len(messages_df)} messages")
                 logging.info(f"Found {len(client.unique_userids)} unique user IDs")
                 return messages_df.to_dict(orient="records")

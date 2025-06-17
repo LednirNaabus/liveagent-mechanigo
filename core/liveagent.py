@@ -305,7 +305,7 @@ class LiveAgentClient:
                 logging.error(f"Exception occured in 'fetch_tickets()': {e}")
                 traceback.print_exc()
 
-        async def fetch_ticket_message(self, ticket_payload: dict, max_pages: int = 5, insert_to_bq: bool = False, batch_size: int = 500) -> pd.DataFrame:
+        async def fetch_ticket_message(self, ticket_payload: dict, max_pages: int = 5, message_per_page: int = 5, insert_to_bq: bool = False, batch_size: int = 500) -> pd.DataFrame:
             # logging.debug(f"parent_client: {self.parent_client}")
             # logging.debug(f"type of parent_client: {type(self.parent_client)}")
             if not self.parent_client.agents_cache:
@@ -319,7 +319,7 @@ class LiveAgentClient:
 
             message_payload = {
                 "page": 1,
-                "_perPage": 100
+                "_perPage": message_per_page
             }
 
             temp_client = self._get_temp_client()
