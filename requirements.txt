@@ -10,6 +10,7 @@ charset-normalizer
 click
 colorama
 db-dtypes
+distro
 dnspython
 email_validator
 fastapi
@@ -24,18 +25,19 @@ google-resumable-media
 googleapis-common-protos
 grpcio
 grpcio-status
-gunicorn
 h11
 httpcore
 httptools
 httpx
 idna
 Jinja2
+jiter
 markdown-it-py
 MarkupSafe
 mdurl
 multidict
 numpy
+openai
 packaging
 pandas
 pip
@@ -53,6 +55,7 @@ python-dotenv
 python-multipart
 pytz
 PyYAML
+regex
 requests
 rich
 rich-toolkit
@@ -61,6 +64,8 @@ shellingham
 six
 sniffio
 starlette
+strsimpy
+tiktoken
 tqdm
 typer
 typing_extensions
