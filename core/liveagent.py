@@ -196,14 +196,14 @@ class LiveAgentClient:
             bigquery.SchemaField("message_visibility", "STRING")
         ]
 
-    def batch_insert_to_bq(self, table_name: str, data: list[dict], schema: list = None):
+    def batch_insert_to_bq(self, table_name: str, data: list[dict], schema: list = None, write_mode: str = "WRITE_APPEND"):
         if not self.bq_client or not self.dataset_id or not data:
             return
 
         table_ref = self.bq_client.dataset(self.dataset_id).table(table_name)
 
         job_config = bigquery.LoadJobConfig(
-            write_disposition="WRITE_APPEND"
+            write_disposition=write_mode
         )
 
         if schema:
@@ -214,7 +214,7 @@ class LiveAgentClient:
         job = self.bq_client.load_table_from_json(data, table_ref, job_config=job_config)
         job.result()
 
-        # logging.info(f"Inserted {len(data)} records to {table_name}")
+        logging.info(f"Inserted {len(data)} records to {table_name}")
     
     async def populate_users_from_collected_ids(self, batch_size: int = 50):
         if not self.unique_userids:
@@ -237,14 +237,14 @@ class LiveAgentClient:
                         users_data.append(user_df.iloc[0].to_dict())
 
                 if len(users_data) >= batch_size:
-                    self.batch_insert_to_bq('users', users_data)
+                    self.batch_insert_to_bq('users', users_data, write_mode="WRITE_APPEND")
                     users_data = []
             except Exception as e:
                 logging.error(f"Error fetching user {userid}: {e}")
                 continue
 
         if users_data:
-            self.batch_insert_to_bq('users', users_data)
+            self.batch_insert_to_bq('users', users_data, write_mode="WRITE_APPEND")
 
     class _BaseResource:
         """

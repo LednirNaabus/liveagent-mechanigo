@@ -134,6 +134,8 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                 messages_df = fill_nan_values(messages_df)
                 logging.info(f"Processed {len(messages_df)} messages")
                 logging.info(f"Found {len(client.unique_userids)} unique user IDs")
+                logging.info("Extracting unique users from extracted ticket messages...")
+                await client.populate_users_from_collected_ids(batch_size=100)
                 return messages_df.to_dict(orient="records")
             else:
                 logging.error(f"Ping to '{client.BASE_URL}/ping' failed. Response: {ping_response}")
