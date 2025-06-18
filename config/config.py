@@ -9,6 +9,7 @@ load_dotenv()
 
 MNL_TZ = pytz.timezone('Asia/Manila')
 API_KEY = os.getenv("API_KEY")
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 CREDS_FILE = json.loads(os.getenv('CREDENTIALS'))
 SCOPE = [
     'https://www.googleapis.com/auth/bigquery'
