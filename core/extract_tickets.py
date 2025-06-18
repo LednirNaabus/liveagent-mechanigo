@@ -44,6 +44,7 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
                     "date_due",
                     "date_deleted",
                     "date_resolved",
+                    "datetime_extracted",
                     target_tz=config.MNL_TZ
                 )
                 # Normalize custom fields
