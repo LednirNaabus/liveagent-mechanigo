@@ -9,7 +9,7 @@ from config import config
 from utils.date_utils import FilterField
 from utils.bq_utils import sql_query_bq
 from core.extract_tags import extract_and_load_tags
-from core.extract_tickets import extract_and_load_tickets, extract_and_load_tix_msgs
+from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
 from core.extract_agents import extract_and_load_agents
 from core.extract_users import extract_and_load_users
 
@@ -116,33 +116,57 @@ async def update_tickets(
 async def update_ticket_messages(
     table_name: str,
     is_initial: bool = Query(False),
-    date: Optional[str] = Query(None, description="Date of extraction in YYYY-MM-DD format.")
+    date: Optional[str] = Query(None, description="Date you want to extract (YYYY-MM-DD).")
 ):
     """
     """
     try:
-        # tickets_table_name = "tickets"
-        # query = f"""
-        # SELECT id, owner_name, agentid
-        # FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
-        # WHERE date_created BETWEEN '{date}'
-        # """
-        # tickets_df = sql_query_bq(query)
-        # messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
-        # return JSONResponse(messages)
+        tickets_table_name = "tickets"
         if is_initial:
-            logging.info("Running initial ticket extraction...")
+            logging.info("Running initial ticket extraction. For backlog purposes.")
             if date:
                 date = pd.Timestamp(date)
+                start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end = (start + pd.offsets.MonthEnd(1)).replace(hour=23, minute=59, second=59)
             else:
-                date = pd.Timestamp("2025-01-01")
+                # For backlog
+                date = pd.Timestamp("2025-05-01")
+                start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end = (start + pd.offsets.MonthEnd(1)).replace(hour=23, minute=59, second=59)
             logging.info(f"Date to be extracted: {date}")
-            messages = await extract_and_load_tix_msgs(date, table_name)
+            query = f"""
+            SELECT id, owner_name, agentid
+            FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
+            WHERE date_created BETWEEN '{start}' AND '{end}'
+            ORDER BY date_created
+            LIMIT 100
+            """
+            tickets_df = sql_query_bq(query)
+            messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
         else:
-            now = pd.Timestamp.now(tz='UTC').astimezone(pytz.timezone('Asia/Manila'))
+            now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
+            now = pd.to_datetime(now, errors="coerce")
+            logging.info(f"Now: {now}")
             date = now - pd.Timedelta(hours=6)
+            logging.info(f"date: {date}")
+            start = date.floor('h')
+            logging.info(f"Start: {start}")
+            logging.info(f"Type of start: {type(start)}")
+            end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
+            logging.info(f"End: {end}")
+            logging.info(f"Type of start: {type(end)}")
             logging.info(f"Date and time of execution: {date}")
-            messages = await extract_and_load_tix_msgs(date, table_name)
+            # strip the timezone in start and end
+            start_str = start.strftime("%Y-%m-%d %H:%M:%S")
+            end_str = end.strftime("%Y-%m-%d %H:%M:%S")
+            query = f"""
+            SELECT id, owner_name, agentid
+            FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
+            WHERE date_created BETWEEN '{start_str}' AND '{end_str}'
+            """
+            logging.info(f"Query: {query}")
+            tickets_df = sql_query_bq(query)
+            messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
