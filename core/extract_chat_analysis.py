@@ -54,8 +54,7 @@ def extract_and_load_chat_analysis(table_name: str):
         query = f"""
         SELECT DISTINCT(ticket_id)
         FROM {config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.messages
-        WHERE datecreated BETWEEN '2025-06-18 06:00:00' AND '2025-06-18 09:59:59'
-        LIMIT 5
+        WHERE datecreated BETWEEN '{start_str}' AND '{end_str}'
         """
         logging.info(f"Querying using: {query}")
 
