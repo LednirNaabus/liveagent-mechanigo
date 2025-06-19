@@ -430,16 +430,3 @@ class LiveAgentClient:
                 traceback.print_exc()
 
             return pd.DataFrame(processed_messages)
-
-        def get_convo_str(self):
-            """
-            Get messages from messages table and convert them to string.
-            """
-            query = f"""
-            SELECT *
-            FROM `mechanigo-liveagent.conversations.messages`
-            """
-            df_messages = sql_query_bq(query)
-            s = [f'datecreated:{m["datecreated"]}\nrole: {m["role"]}\nmessage: "{m["message"]}"' for m in df_messages]
-            # logging.info(f"{__name__}")
-            return s

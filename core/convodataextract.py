@@ -1,10 +1,12 @@
 import json
 import logging
 import tiktoken
+import pandas as pd
 from typing import Dict
 from pydantic import BaseModel
 from openai import OpenAI, AuthenticationError, OpenAIError
 from core.liveagent import LiveAgentClient
+from utils.bq_utils import sql_query_bq
 from config import config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -38,16 +40,16 @@ class ConvoDataExtract:
 
     def __init__(
             self,
-            ticket: LiveAgentClient.Ticket = None,
+            ticket_id: str = None,
             api_key: str = None,
             temperature: int = 0.8
     ):
         self.client = self.create_client(api_key=api_key)
         self.model = 'gpt-4o'
         self.temperature = temperature
-        self.ticket = ticket
-        if self.ticket:
-            self.conversation_text = self.ticket.get_convo_str()
+        self.ticket_id = ticket_id
+        if self.ticket_id:
+            self.conversation_text = self.get_convo_str(ticket_id)
         self.prompt = f"""
             You are a conversation analyst for Mechanigo.ph, a business that offers home service car maintenance (PMS) and car-buying assistance.
 
@@ -154,6 +156,9 @@ class ConvoDataExtract:
             - Make sure the location mentioned is located in the Philippines only.
         """
 
+        if self.conversation_text:
+            self.data = self.analyze_convo()
+
     def create_client(self, api_key: str = None) -> OpenAI:
         key_sources = [
             ("provided", api_key),
@@ -170,3 +175,60 @@ class ConvoDataExtract:
             except (AuthenticationError, OpenAIError) as e:
                 logging.error(f"Failed with {source} key: {e}")
                 continue
+    
+    def analyze_convo(self) -> Dict:
+        if not self.prompt:
+            raise Exception('Prompt not specified.')
+
+        messages = [
+            {
+                "role": "system",
+                "content": self.prompt
+            }
+        ]
+
+        try:
+            response = self.client.beta.chat.completions.parse(
+                model=self.model,
+                messages=messages,
+                response_format=self.ResponseSchema
+            )
+
+            return {
+                'data': json.loads(response.choices[0].message.content),
+                'tokens': response.usage.total_tokens
+            }
+        except Exception as e:
+            output = {
+                'data': {
+                    "purpose": None,
+                    "car": None,
+                    "location": None,
+                    "summary": None,
+                    "intent_rating": None,
+                    "engagement_rating": None,
+                    "clarity_rating": None,
+                    "resolution_rating": None,
+                    "sentiment_rating": None
+                },
+                'tokens': count_tokens(self.prompt)
+            }
+
+            return output
+
+    def get_convo_str(self, ticket_id: str) -> str:
+        """
+        Get messages from messages table and convert them to string.
+        """
+        query = f"""
+        SELECT datecreated, sender_type, message
+        FROM `mechanigo-liveagent.conversations.messages`
+        WHERE ticket_id = '{ticket_id}'
+        ORDER BY datecreated
+        """
+        df_messages = sql_query_bq(query)
+        s = [
+            f'datecreated:{m[["datecreated"]]}\nsender: {m["sender_type"]}\nmessage: {m["message"]}'
+            for _, m in df_messages.iterrows()
+        ]
+        return "\n\n".join(s)
