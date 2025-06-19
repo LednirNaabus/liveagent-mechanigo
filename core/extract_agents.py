@@ -1,5 +1,3 @@
-import pytz
-import json
 import logging
 import pandas as pd
 from config import config
