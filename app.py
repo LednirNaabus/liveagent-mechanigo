@@ -12,6 +12,7 @@ from core.extract_tags import extract_and_load_tags
 from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
 from core.extract_agents import extract_and_load_agents
 from core.extract_users import extract_and_load_users
+from core.extract_chat_analysis import extract_and_load_chat_analysis
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -29,6 +30,7 @@ async def update_agents(table_name: str):
     """
     """
     try:
+        logging.info("Extracting and loading agents...")
         agents = await extract_and_load_agents(table_name)
         return JSONResponse(agents)
     except Exception as e:
@@ -170,6 +172,24 @@ async def update_ticket_messages(
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
+        return JSONResponse(content={
+            'error': str(e),
+            'status': 'error'
+        })
+
+@app.post("/mechanigo-liveagent/update-chat-analysis/{table_name}")
+def update_chat_analysis(table_name: str):
+    try:
+        chat_analysis = extract_and_load_chat_analysis(table_name)
+        if chat_analysis is None:
+            logging.info("No chat data to process.")
+            return JSONResponse(content={
+                'message': "No data found for specifed date or time range.",
+                'status': 'error'
+            })
+        return JSONResponse(chat_analysis)
+    except Exception as e:
+        logging.error(f"Exception occured while updating chat analysis: {e}")
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'
