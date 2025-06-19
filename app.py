@@ -1,6 +1,6 @@
 import os
-import pytz
 import logging
+import traceback
 import pandas as pd
 from typing import Optional
 from fastapi import FastAPI, Query
@@ -102,7 +102,7 @@ async def update_tickets(
             logging.info(f"Date to be extracted: {date}")
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CREATED)
         else:
-            now = pd.Timestamp.now(tz="UTC").astimezone(pytz.timezone("Asia/Manila"))
+            now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
             date = now - pd.Timedelta(hours=6)
             logging.info(f"Date and time of execution: {date}")
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CHANGED)
@@ -171,7 +171,8 @@ async def update_ticket_messages(
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
         return JSONResponse(messages)
     except Exception as e:
-        logging.error(f"Exception occured while updating tickets: {e}")
+        logging.error(f"Exception occured while updating ticket messages: {e}")
+        traceback.print_exc()
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'
