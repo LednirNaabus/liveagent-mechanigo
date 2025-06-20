@@ -28,6 +28,27 @@ def root():
 @app.post("/mechanigo-liveagent/update-agents/{table_name}")
 async def update_agents(table_name: str):
     """
+    End point to update and fetch agents from the LiveAgent API on a daily basis (will be run by a cloud scheduler).
+
+    This endpoint performs the following actions:
+    1. Retrieves the agents from the LiveAgent API via the `/agents` endpoint.
+    2. Loads the fetched agents data into a specified BigQuery table.
+
+    The `table_name` parameter is used to determine which BigQuery table the data should be loaded into.
+
+    Returns:
+
+        - A JSON response containing the fetched agents data if successful.
+
+        - A JSON response with an error message and status if an exception occurs during the process.
+
+    Args:
+
+        - `table_name` (`str`) : The name of the BigQuery table where the agents data will be stored.
+
+    Raises:
+
+        Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
     """
     try:
         logging.info("Extracting and loading agents...")
@@ -42,6 +63,27 @@ async def update_agents(table_name: str):
 
 @app.post("/mechanigo-liveagent/update-users/{table_name}")
 async def update_users(table_name: str):
+    """
+    Endpoint to update and fetch users from the LiveAgent API (used in development and testing only). See `core.liveagent.py` for extraction and loading of users.
+
+    This endpoint performs the following actions:
+    1. Retrieves the users data from the LiveAgent API via the `/users/{userID}` endpoint.
+    2. Loads the fetched users data into a specified BigQuery table.
+
+    Returns:
+    
+        - A JSON response containing the fetched users if successful.
+
+        - A JSON response with an error message and status if an exception occurs during the process.
+
+    Args:
+
+        `table_name` (`str`) : The name of the BigQuery table where the data will be stored.
+    
+    Raises:
+
+        Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
+    """
     try:
         logging.info("Extracting and loading users...")
         users = await extract_and_load_users(table_name)
@@ -56,22 +98,23 @@ async def update_users(table_name: str):
 @app.post("/mechanigo-liveagent/update-tags/{table_name}")
 async def update_tags(table_name: str):
     """
-    Endpoint to update and fetch tags from the LiveAgent API on a daily basis.
+    Endpoint to update and fetch tags from the LiveAgent API on a daily basis (will be run by a cloud scheduler).
 
     This endpoint performs the following actions:
     1. Retrieves the tags data from the LiveAgent API via the `/tags` endpoint.
     2. Loads the fetched tags data into a specified BigQuery table.
 
-    The `table_name` parameter is used to determine which BigQuery table the tags data should be loaded into.
-
     Returns:
+
         - A JSON response containing the fetched tags data if successful.
+
         - A JSON response with an error message and status if an exception occurs during the process.
 
     Args:
-        table_name (str): The name of the BigQuery table where the tags data will be stored.
+        `table_name` (`str`) : The name of the BigQuery table where the tags data will be stored.
     
     Raises:
+
         Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
     """
     try:
@@ -91,6 +134,11 @@ async def update_tickets(
     date: Optional[str] = Query(None, description="Optional date in YYYY-MM-DD format. **Important**: Date should be start of month (i.e., 2025-01-01, or 2025-12-01, etc.)")
 ):
     """
+    Endpoint to update and fetch tickets from the LiveAgent API on a daily basis (wll be run by a cloud scheduler).
+
+    This endpoint performs the following actions:
+    1. Retrieves the tickets data from the LiveAgent API via the `/tickets` endpoint.
+    2. Loads the fetched tickets data into a specified BigQuery table.
     """
     try:
         if is_initial:
