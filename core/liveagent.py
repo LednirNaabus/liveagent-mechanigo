@@ -237,14 +237,14 @@ class LiveAgentClient:
                         users_data.append(user_df.iloc[0].to_dict())
 
                 if len(users_data) >= batch_size:
-                    self.batch_insert_to_bq('users', users_data, write_mode="WRITE_APPEND")
+                    self.batch_insert_to_bq('users_tmp', users_data, write_mode="WRITE_APPEND")
                     users_data = []
             except Exception as e:
                 logging.error(f"Error fetching user {userid}: {e}")
                 continue
 
         if users_data:
-            self.batch_insert_to_bq('users', users_data, write_mode="WRITE_APPEND")
+            self.batch_insert_to_bq('users_tmp', users_data, write_mode="WRITE_APPEND")
 
     class _BaseResource:
         """
