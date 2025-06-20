@@ -91,7 +91,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
         "agentid": tickets_df['agentid'].tolist(),
     }
 
-    async with LiveAgentClient(config.API_KEY) as client:
+    async with LiveAgentClient(config.API_KEY, config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME) as client:
         success, ping_response = await client.ping()
         try:
             if success:
@@ -134,7 +134,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                 logging.info(f"Processed {len(messages_df)} messages")
                 logging.info(f"Found {len(client.unique_userids)} unique user IDs")
                 logging.info("Extracting unique users from extracted ticket messages...")
-                await client.populate_users_from_collected_ids(batch_size=100)
+                await client.populate_users_from_collected_ids(batch_size=50)
                 return messages_df.to_dict(orient="records")
             else:
                 logging.error(f"Ping to '{client.BASE_URL}/ping' failed. Response: {ping_response}")
