@@ -107,3 +107,13 @@ def sql_query_bq(query: str) -> pd.DataFrame:
     query_job = client.query(query)
     df = query_job.to_dataframe()
     return df
+
+def drop_table_bq(project_id: str, dataset_name: str, table_name: str):
+    client = get_client()['client']
+    full_table_id = f"{project_id}.{dataset_name}.{table_name}"
+    try:
+        client.delete_table(full_table_id, not_found_ok=True)
+        logging.info(f"{full_table_id} dropped.")
+    except Exception as e:
+        logging.error(f"Exception occurred while dropping table: {e}")
+        logging.error(f"Failed to drop table '{full_table_id}'.")
