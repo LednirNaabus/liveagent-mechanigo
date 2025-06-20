@@ -216,6 +216,7 @@ async def update_ticket_messages(
             """
             logging.info(f"Query: {query}")
             tickets_df = sql_query_bq(query)
+            logging.info(f"Query results:\n{tickets_df.head()}")
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
         return JSONResponse(messages)
     except Exception as e:
