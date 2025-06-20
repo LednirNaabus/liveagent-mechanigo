@@ -91,7 +91,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
         "agentid": tickets_df['agentid'].tolist(),
     }
 
-    async with LiveAgentClient(config.API_KEY, config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME) as client:
+    async with LiveAgentClient(config.API_KEY) as client:
         success, ping_response = await client.ping()
         try:
             if success:
