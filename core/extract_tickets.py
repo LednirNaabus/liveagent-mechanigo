@@ -110,6 +110,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                     "datecreated",
                     "datefinished",
                     "message_datecreated",
+                    "datetime_extracted",
                     target_tz=config.MNL_TZ
                 )
                 logging.info("Generating schema and loading data to BigQuery...")
