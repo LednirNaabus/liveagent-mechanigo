@@ -210,7 +210,7 @@ async def update_ticket_messages(
             start_str = start.strftime("%Y-%m-%d %H:%M:%S")
             end_str = end.strftime("%Y-%m-%d %H:%M:%S")
             query = f"""
-            SELECT id, owner_name, agentid
+            SELECT id, owner_name, agentid, date_created, date_changed
             FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
             WHERE date_created BETWEEN '{start_str}' AND '{end_str}'
             """
