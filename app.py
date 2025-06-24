@@ -6,7 +6,8 @@ from typing import Optional
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from config import config
-from utils.date_utils import FilterField, scheduled_extract
+from utils.date_utils import FilterField
+from utils.extract_utils import initial_extract, scheduled_extract
 from utils.bq_utils import sql_query_bq
 from core.extract_tags import extract_and_load_tags
 from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
@@ -175,22 +176,11 @@ async def update_ticket_messages(
         if is_initial:
             logging.info("Running initial ticket extraction. For backlog purposes.")
             if date:
-                date = pd.Timestamp(date)
-                start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                end = (start + pd.offsets.MonthEnd(1)).replace(hour=23, minute=59, second=59)
+                query = initial_extract(date, tickets_table_name)
             else:
                 # For backlog
-                date = pd.Timestamp("2025-05-01")
-                start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                end = (start + pd.offsets.MonthEnd(1)).replace(hour=23, minute=59, second=59)
+                query = initial_extract("2025-01-01", tickets_table_name)
             logging.info(f"Date to be extracted: {date}")
-            query = f"""
-            SELECT id, owner_name, agentid, date_created, date_changed
-            FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
-            WHERE date_created BETWEEN '{start}' AND '{end}'
-            ORDER BY date_created
-            LIMIT 100
-            """
             tickets_df = sql_query_bq(query)
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
         else:
