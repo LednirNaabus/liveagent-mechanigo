@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import logging
 from typing import Optional
@@ -30,7 +31,7 @@ def scheduled_extract(tickets_table_name: str) -> str:
     """
     now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
     now = pd.to_datetime(now, errors="coerce")
-    logging.info(f"Now: {now}")
+    logging.info(f"Now (timezone aware): {now}")
     date = now - pd.Timedelta(hours=6)
     logging.info(f"Date: {date}")
     start = date.floor('h')
@@ -38,6 +39,7 @@ def scheduled_extract(tickets_table_name: str) -> str:
     end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
     logging.info(f"End: {end}")
     logging.info(f"Date and time of execution: {now}")
+    logging.info(f"System timezone: {time.tzname}")
     start_str = start.strftime("%Y-%m-%d %H:%M:%S")
     end_str = end.strftime("%Y-%m-%d %H:%M:%S")
     query = """

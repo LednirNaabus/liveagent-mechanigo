@@ -42,7 +42,6 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
                     "date_due",
                     "date_deleted",
                     "date_resolved",
-                    "datetime_extracted",
                     target_tz=config.MNL_TZ
                 )
                 # Normalize custom fields
@@ -110,7 +109,6 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                     "datecreated",
                     "datefinished",
                     "message_datecreated",
-                    "datetime_extracted",
                     target_tz=config.MNL_TZ
                 )
                 logging.info("Generating schema and loading data to BigQuery...")

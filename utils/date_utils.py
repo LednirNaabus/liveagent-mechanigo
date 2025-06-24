@@ -35,10 +35,12 @@ def set_timezone(df: pd.DataFrame, *columns: str, target_tz: str) -> pd.DataFram
     """
     """
     for column in columns:
-        df[column] = pd.to_datetime(df[column], errors="coerce").dt.tz_localize('UTC')
-        df[column] = df[column].apply(
-            lambda x: x.astimezone(target_tz).replace(tzinfo=None) if pd.notnull(x) else x
-        )
+        df[column] = pd.to_datetime(df[column], errors="coerce")
+        if df[column].dt.tz is None:
+            df[column] = df[column].dt.tz_localize("UTC")
+        else:
+            df[column] = df[column].dt.tz_convert("UTC")
+        df[column] = df[column].dt.tz_convert(target_tz).dt.tz_localize(None)
     return df
 
 def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
