@@ -36,7 +36,7 @@ def scheduled_extract(tickets_table_name: str) -> str:
     logging.info(f"Date: {date}")
     start = date.floor('h')
     logging.info(f"Start: {start}")
-    end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
+    end = start + pd.Timedelta(hours=6)
     logging.info(f"End: {end}")
     logging.info(f"Date and time of execution: {now}")
     logging.info(f"System timezone: {time.tzname}")
@@ -45,7 +45,7 @@ def scheduled_extract(tickets_table_name: str) -> str:
     query = """
     SELECT id, owner_name, agentid, date_created, date_changed
     FROM `{}.{}.{}`
-    WHERE date_created BETWEEN '{}' AND '{}'
+    WHERE date_created >= '{}' AND date_created < '{}'
     """.format(config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME, tickets_table_name, start_str, end_str)
     logging.info(f"Query: {query}")
     return query
