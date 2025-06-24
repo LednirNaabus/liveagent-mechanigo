@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from config import config
-from utils.date_utils import FilterField
+from utils.date_utils import FilterField, scheduled_extract
 from utils.bq_utils import sql_query_bq
 from core.extract_tags import extract_and_load_tags
 from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
@@ -185,7 +185,7 @@ async def update_ticket_messages(
                 end = (start + pd.offsets.MonthEnd(1)).replace(hour=23, minute=59, second=59)
             logging.info(f"Date to be extracted: {date}")
             query = f"""
-            SELECT id, owner_name, agentid
+            SELECT id, owner_name, agentid, date_created, date_changed
             FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
             WHERE date_created BETWEEN '{start}' AND '{end}'
             ORDER BY date_created
@@ -194,33 +194,12 @@ async def update_ticket_messages(
             tickets_df = sql_query_bq(query)
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
         else:
-            now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
-            now = pd.to_datetime(now, errors="coerce")
-            logging.info(f"Now: {now}")
-            date = now - pd.Timedelta(hours=6)
-            logging.info(f"date: {date}")
-            start = date.floor('h')
-            logging.info(f"Start: {start}")
-            logging.info(f"Type of start: {type(start)}")
-            end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
-            logging.info(f"End: {end}")
-            logging.info(f"Type of start: {type(end)}")
-            logging.info(f"Date and time of execution: {date}")
-            # strip the timezone in start and end
-            start_str = start.strftime("%Y-%m-%d %H:%M:%S")
-            end_str = end.strftime("%Y-%m-%d %H:%M:%S")
-            query = f"""
-            SELECT id, owner_name, agentid, date_created, date_changed
-            FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
-            WHERE date_created BETWEEN '{start_str}' AND '{end_str}'
-            """
-            logging.info(f"Query: {query}")
-            tickets_df = sql_query_bq(query)
-            logging.info(f"Query results:\n{tickets_df.head()}")
+            query_str = scheduled_extract(tickets_table_name)
+            tickets_df = sql_query_bq(query_str)
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
         return JSONResponse(messages)
     except Exception as e:
-        logging.error(f"Exception occured while updating ticket messages: {e}")
+        logging.error(f"Exception occurred while updating ticket messsages: {e}")
         traceback.print_exc()
         return JSONResponse(content={
             'error': str(e),

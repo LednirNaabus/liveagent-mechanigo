@@ -1,6 +1,10 @@
 import json
+import logging
 import pandas as pd
 from enum import Enum
+from config import config
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 class FilterField(str, Enum):
     DATE_CREATED = "date_created"
@@ -47,3 +51,24 @@ def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d %H:
     for column in columns:
         df[column] = df[column].dt.strftime(format)
     return df
+
+def scheduled_extract(tickets_table_name: str):
+    now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
+    now = pd.to_datetime(now, errors="coerce")
+    logging.info(f"Now: {now}")
+    date = now - pd.Timedelta(hours=6)
+    logging.info(f"Date: {date}")
+    start = date.floor('h')
+    logging.info(f"Start: {start}")
+    end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
+    logging.info(f"End: {end}")
+    logging.info(f"Date and time of execution: {now}")
+    start_str = start.strftime("%Y-%m-%d %H:%M:%S")
+    end_str = end.strftime("%Y-%m-%d %H:%M:%S")
+    query = f"""
+    SELECT id, owner_name, agentid, date_created, date_changed
+    FROM `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{tickets_table_name}`
+    WHERE date_created BETWEEN '{start_str}' AND '{end_str}'
+    """
+    logging.info(f"Query: {query}")
+    return query
