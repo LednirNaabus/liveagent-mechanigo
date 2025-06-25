@@ -184,9 +184,12 @@ async def update_ticket_messages(
             tickets_df = sql_query_bq(query)
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
         else:
-            query_str = scheduled_extract(tickets_table_name)
-            tickets_df = sql_query_bq(query_str)
-            messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
+            try:
+                query_str = scheduled_extract(tickets_table_name)
+                tickets_df = sql_query_bq(query_str)
+                messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
+            except Exception as e:
+                logging.error(f"Exception occured during query to BigQuery: {e}")
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occurred while updating ticket messsages: {e}")
