@@ -29,10 +29,10 @@ def scheduled_extract(tickets_table_name: str) -> str:
     """
     Used for `/update-ticket-messages`, specifically when query parameter `is_initial` is `False`.
     """
-    now = pd.Timestamp.now(tz="UTC")
+    now = pd.Timestamp.now(tz=config.MNL_TZ)
     now = pd.to_datetime(now, errors="coerce")
-    logging.info(f"Now UTC (timezone aware): {now}")
-    logging.info(f"Now PH time (timezone aware): {now.astimezone(config.MNL_TZ)}")
+    logging.info(f"Now PH Time (timezone aware): {now}")
+    logging.info(f"Now (in UTC) (timezone aware): {now.astimezone('UTC')}")
     date = now - pd.Timedelta(hours=6)
     logging.info(f"Date: {date}")
     start = date.floor('h')
