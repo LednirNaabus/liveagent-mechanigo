@@ -27,7 +27,7 @@ async def extract_and_load_agents(table_name: str):
                     config.GCLOUD_PROJECT_ID,
                     config.BQ_DATASET_NAME,
                     table_name,
-                    "WRITE_APPEND",
+                    "WRITE_TRUNCATE",
                     schema
                 )
                 return agents
