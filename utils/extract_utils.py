@@ -43,6 +43,7 @@ def scheduled_extract(tickets_table_name: str) -> str:
     logging.info(f"System timezone: {time.tzname}")
     start_str = start.strftime("%Y-%m-%d %H:%M:%S")
     end_str = end.strftime("%Y-%m-%d %H:%M:%S")
+    logging.info("Types for 'start_str' and 'end_str': {} {}".format(type(start_str), type(end_str)))
     query = """
     SELECT id, owner_name, agentid, date_created, date_changed
     FROM `{}.{}.{}`

@@ -184,12 +184,10 @@ async def update_ticket_messages(
             tickets_df = sql_query_bq(query)
             messages = await extract_and_load_ticket_messages(tickets_df, table_name, 10)
         else:
-            try:
-                query_str = scheduled_extract(tickets_table_name)
-                tickets_df = sql_query_bq(query_str)
-                messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
-            except Exception as e:
-                logging.error(f"Exception occured during query to BigQuery: {e}")
+            logging.info(f"About to execute query. Time now: {pd.Timestamp.now(tz='UTC')}")
+            query_str = scheduled_extract(tickets_table_name)
+            tickets_df = sql_query_bq(query_str)
+            messages = await extract_and_load_ticket_messages(tickets_df, table_name, 100)
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occurred while updating ticket messsages: {e}")
