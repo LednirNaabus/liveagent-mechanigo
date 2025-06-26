@@ -102,11 +102,15 @@ def load_data_to_bq(df: pd.DataFrame, project_id: str, dataset_name: str, table_
         logging.error(f"Error uploading data to BigQuery: {e}")
         raise
 
-def sql_query_bq(query: str) -> pd.DataFrame:
+def sql_query_bq(query: str, return_data: bool = True) -> pd.DataFrame:
     client = get_client()['client']
     query_job = client.query(query)
-    df = query_job.to_dataframe()
-    return df
+    if return_data:
+        df = query_job.to_dataframe()
+        return df
+    else:
+        query_job.result()
+        return None
 
 def drop_table_bq(project_id: str, dataset_name: str, table_name: str):
     client = get_client()['client']
@@ -117,3 +121,16 @@ def drop_table_bq(project_id: str, dataset_name: str, table_name: str):
     except Exception as e:
         logging.error(f"Exception occurred while dropping table: {e}")
         logging.error(f"Failed to drop table '{full_table_id}'.")
+
+def create_table_bq(project_id: str, dataset_name: str, table_name: str, schema: list[bigquery.SchemaField]=None):
+    table_id = f"{project_id}.{dataset_name}.{table_name}"
+    client = get_client()['client']
+    try:
+        client.get_table(table_id)
+    except NotFound:
+        logging.info(f"Table {table_id} does not exist. Creating one...")
+        table = bigquery.Table(table_id, schema=schema) if schema else bigquery.Table(table_id)
+        client.create_table(table)
+        logging.info(f"Table {table_id} created.")
+    except Exception as e:
+        logging.error(f"Exception occurred while creating table: {e}")
