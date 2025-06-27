@@ -42,7 +42,7 @@ class ConvoDataExtract:
             temperature: int = 0.8
     ):
         self.client = self.create_client(api_key=api_key)
-        self.model = 'gpt-4.1 mini'
+        self.model = 'gpt-4.1-mini'
         self.temperature = temperature
         self.ticket_id = ticket_id
         if self.ticket_id:
