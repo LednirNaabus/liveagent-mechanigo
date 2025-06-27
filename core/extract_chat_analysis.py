@@ -52,6 +52,18 @@ def merge(table_name: str, df: pd.DataFrame) -> None:
         table_name,
         schema
     )
+    # load data to convo analysis history
+    # For historical data purposes
+    history = f"{table_name}_history"
+    logging.info(f"Loading data to conversation analysis history table: {history}")
+    load_data_to_bq(
+        df,
+        config.GCLOUD_PROJECT_ID,
+        config.BQ_DATASET_NAME,
+        history,
+        "WRITE_APPEND",
+        schema
+    )
     # Load data to staging table
     staging_table = f"{table_name}_staging"
     logging.info(f"Loading data to a staging table: {staging_table}")
