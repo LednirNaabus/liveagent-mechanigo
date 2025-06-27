@@ -114,7 +114,7 @@ class ConvoDataExtract:
         """
         query = f"""
         SELECT datecreated, sender_type, message
-        FROM `mechanigo-liveagent.conversations.msgs`
+        FROM `mechanigo-liveagent.conversations.messages`
         WHERE ticket_id = '{ticket_id}'
         ORDER BY datecreated
         """
