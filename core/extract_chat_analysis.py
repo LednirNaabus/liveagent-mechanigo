@@ -1,3 +1,4 @@
+import time
 import logging
 import traceback
 import pandas as pd
@@ -136,6 +137,7 @@ def extract_and_load_chat_analysis(table_name: str):
         # Processing
         logging.info(f"DF: {results}")
         logging.info(f"DF['ticket_id']: {results['ticket_id']}")
+        start_time = time.perf_counter()
         ticket_messages_df = process_chat(ticket_ids=results)
         logging.info("Done processing chats.")
         logging.info(f"Head: {ticket_messages_df.head()}")
@@ -146,6 +148,9 @@ def extract_and_load_chat_analysis(table_name: str):
         # Dropping columns that are not needed
         ticket_messages_df = drop_cols(ticket_messages_df, "score", "input_address", "lat", "lng", "error")
         merge(table_name, ticket_messages_df)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        logging.info(f"Time elapsed during conversation analysis: {elapsed_time:.2f} seconds.")
         logging.info(f"Processed chats and Geolocation:\n{ticket_messages_df.head()}")
         # Make date columns JSON serializable to avoid error/warning
         ticket_messages_df = format_date_col(
