@@ -34,6 +34,7 @@ class ConvoDataExtract:
         car: str
         inspection: str
         quotation: str
+        model: str
 
     def __init__(
             self,

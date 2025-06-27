@@ -130,6 +130,10 @@ Use the following rubrics for each score:
     - description: quotation based from the recommendations sent as described by the agent which
     may include parts replacement prices, service costs, and fees.
 
+14. **Model**
+    - type: str
+    - description: The GPT model used for the analysis (gpt-4o or gpt-4.1-mini, etc.)
+
 - If not mentioned, leave the corresponding field blank.
 - Make sure the location mentioned is located in the Philippines only.
 """
