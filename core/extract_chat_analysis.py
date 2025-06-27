@@ -3,17 +3,17 @@ import traceback
 import pandas as pd
 from tqdm import tqdm
 from core.convodataextract import ConvoDataExtract
-from utils.bq_utils import sql_query_bq, generate_schema, load_data_to_bq
+from utils.bq_utils import sql_query_bq, generate_schema, load_data_to_bq, create_table_bq
 from utils.geocoding_utils import geocode
 from utils.df_utils import drop_cols
-from utils.date_utils import set_timezone
+from utils.date_utils import set_timezone, format_date_col
 from config import config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 def process_chat(ticket_ids: pd.Series):
     rows = []
-    date_extracted = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_extracted = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")
     for ticket_id in ticket_ids['ticket_id']:
         logging.info(f"Ticket ID: {ticket_id}")
         processor = ConvoDataExtract(ticket_id, api_key=config.OPENAI_API_KEY)
@@ -42,6 +42,53 @@ def process_address(df: pd.Series):
             result = {'lat': None, 'lng': None, 'address': i, 'error': str({e})}
         locations.append(result)
     return pd.DataFrame(locations)
+
+def merge(table_name: str, df: pd.DataFrame) -> None:
+    logging.info("Generating schema and loading data into BigQuery...")
+    schema = generate_schema(df)
+    create_table_bq(
+        config.GCLOUD_PROJECT_ID,
+        config.BQ_DATASET_NAME,
+        table_name,
+        schema
+    )
+    # Load data to staging table
+    staging_table = f"{table_name}_staging"
+    logging.info(f"Loading data to a staging table: {staging_table}")
+    load_data_to_bq(
+        df,
+        config.GCLOUD_PROJECT_ID,
+        config.BQ_DATASET_NAME,
+        staging_table,
+        "WRITE_TRUNCATE",
+        schema
+    )
+    columns = [
+        'service_category', 'summary', 'intent_rating', 'engagement_rating', 'clarity_rating',
+        'resolution_rating', 'sentiment_rating', 'location', 'schedule_date', 'schedule_time',
+        'car', 'inspection', 'quotation', 'tokens', 'date_extracted',
+        'address', 'latitude', 'longitude', 'source'
+    ]
+    all_columns = ['ticket_id'] + columns
+    update_set_clause = ',\n    '.join([f"{col} = source.{col}" for col in columns])
+    insert_columns = ', '.join(all_columns)
+    insert_values = ', '.join([f"source.{col}" for col in all_columns])
+    # Perform merge operation
+    logging.info("Merging...")
+    merge_query=f"""
+    MERGE `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{table_name}` AS target
+    USING `{config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.{staging_table}` AS source
+    ON target.ticket_id = source.ticket_id
+    WHEN MATCHED THEN
+        UPDATE SET
+            {update_set_clause}
+    WHEN NOT MATCHED THEN
+        INSERT ({insert_columns})
+        VALUES ({insert_values})
+    """
+    sql_query_bq(merge_query, return_data=False)
+    drop = """DROP TABLE `{}.{}.{}`""".format(config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME, staging_table)
+    sql_query_bq(drop, return_data=False)
 
 def extract_and_load_chat_analysis(table_name: str):
     try:
@@ -73,8 +120,8 @@ def extract_and_load_chat_analysis(table_name: str):
             return None
 
         # Processing
-        print(f"DF: {results}")
-        print(f"DF['ticket_id']: {results['ticket_id']}")
+        logging.info(f"DF: {results}")
+        logging.info(f"DF['ticket_id']: {results['ticket_id']}")
         ticket_messages_df = process_chat(ticket_ids=results)
         logging.info("Done processing chats.")
         logging.info(f"Head: {ticket_messages_df.head()}")
@@ -84,17 +131,14 @@ def extract_and_load_chat_analysis(table_name: str):
         ticket_messages_df = pd.concat([ticket_messages_df, geolocation], axis=1)
         # Dropping columns that are not needed
         ticket_messages_df = drop_cols(ticket_messages_df, "score", "input_address", "lat", "lng", "error")
-        logging.info("Generating schema and loading data into BigQuery...")
-        schema = generate_schema(ticket_messages_df)
-        load_data_to_bq(
-            ticket_messages_df,
-            config.GCLOUD_PROJECT_ID,
-            config.BQ_DATASET_NAME,
-            table_name,
-            "WRITE_APPEND",
-            schema
-        )
+        merge(table_name, ticket_messages_df)
         logging.info(f"Processed chats and Geolocation:\n{ticket_messages_df.head()}")
+        # Make date columns JSON serializable to avoid error/warning
+        ticket_messages_df = format_date_col(
+            ticket_messages_df,
+            "schedule_date",
+            "date_extracted"
+        )
         return ticket_messages_df.to_dict(orient="records")
     except Exception as e:
         logging.error(f"Exception occured while processing chat analysis: {e}")
