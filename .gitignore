@@ -5,3 +5,4 @@ csv/
 __init__.py
 .env
 test.py
+notes.md
