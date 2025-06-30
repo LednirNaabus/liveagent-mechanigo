@@ -115,7 +115,7 @@ def extract_and_load_chat_analysis(table_name: str):
         # Querying
         query = f"""
         SELECT
-        ticket_id
+        DISTINCT ticket_id
         FROM {config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.messages
         WHERE message_format = 'T'
             AND datecreated BETWEEN '{start_str}' AND '{end_str}'
