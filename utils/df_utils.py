@@ -19,6 +19,9 @@ def fill_nan_values(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def drop_cols(df: pd.DataFrame, *cols: str) -> pd.DataFrame:
+    """
+    Accepts a `pandas` DataFrame, and iteratively drops each column provided.
+    """
     try:
         existing = [col for col in cols if col in df.columns]
         if existing:

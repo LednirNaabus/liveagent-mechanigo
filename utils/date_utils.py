@@ -33,6 +33,7 @@ def set_filter(date: pd.Timestamp, filter_field: FilterField = FilterField.DATE_
 
 def set_timezone(df: pd.DataFrame, *columns: str, target_tz: str) -> pd.DataFrame:
     """
+    Accepts a `pandas` DataFrame, and iteratively converts each column provided to the targeted timezone.
     """
     for column in columns:
         df[column] = pd.to_datetime(df[column], errors="coerce")
@@ -45,6 +46,7 @@ def set_timezone(df: pd.DataFrame, *columns: str, target_tz: str) -> pd.DataFram
 
 def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d %H:%M:%S") -> pd.DataFrame:
     """
+    Accepts a `pandas` DataFrame, and iteratively formats the date columns to "`YYYY-MM-DD HH:MM:SS`" format.
     """
     for column in columns:
         df[column] = df[column].dt.strftime(format)
