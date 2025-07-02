@@ -32,6 +32,8 @@ class ConvoDataExtract:
         schedule_date: str
         schedule_time: str
         car: str
+        contact_num: str
+        payment: str
         inspection: str
         quotation: str
         model: str
@@ -114,14 +116,14 @@ class ConvoDataExtract:
         Get messages from messages table and convert them to string.
         """
         query = f"""
-        SELECT datecreated, sender_type, message
+        SELECT sender_type, message
         FROM `mechanigo-liveagent.conversations.messages`
         WHERE ticket_id = '{ticket_id}'
         ORDER BY datecreated
         """
         df_messages = sql_query_bq(query)
         s = [
-            f'datecreated:{m[["datecreated"]]}\nsender: {m["sender_type"]}\nmessage: {m["message"]}'
+            f'sender: {m["sender_type"]}\nmessage: {m["message"]}'
             for _, m in df_messages.iterrows()
         ]
         return "\n\n".join(s)
