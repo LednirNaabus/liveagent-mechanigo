@@ -24,7 +24,7 @@ def process_chat(ticket_ids: pd.Series):
         combined = pd.concat([new_df, tokens_df], axis=1)
         combined['date_extracted'] = date_extracted
         combined['date_extracted'] = pd.to_datetime(combined['date_extracted'], errors='coerce')
-        combined = set_timezone(combined, "date_extracted", "schedule_date", target_tz=config.MNL_TZ)
+        combined = set_timezone(combined, "date_extracted", target_tz=config.MNL_TZ)
         combined.insert(0, 'ticket_id', ticket_id)
         rows.append(combined)
     return pd.concat(rows, ignore_index=True)
