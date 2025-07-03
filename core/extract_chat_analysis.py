@@ -155,7 +155,6 @@ def extract_and_load_chat_analysis(table_name: str):
         # Make date columns JSON serializable to avoid error/warning
         ticket_messages_df = format_date_col(
             ticket_messages_df,
-            "schedule_date",
             "date_extracted"
         )
         return ticket_messages_df.to_dict(orient="records")
