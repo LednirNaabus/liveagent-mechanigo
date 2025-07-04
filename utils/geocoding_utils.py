@@ -5,6 +5,11 @@ import requests
 from time import time, sleep
 from config import config
 from utils import bq_utils
+from fuzzywuzzy import process
+import re
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 def similarity(str1, str2, n):
     return strsimpy.jaccard.Jaccard(n).similarity(str1, str2)
@@ -128,3 +133,38 @@ def fallback_geocode(address):
         }
 
     return None
+
+def normalize_location(text: str):
+    if not isinstance(text, str):
+        return ""
+
+    text = text.encode("latin1").decode("utf-8", "ignore")
+    text = text.lower()
+    text = re.sub(r'[^a-z\s]', '', text)
+    text = text.replace("city of", "").replace("municipality of", "")
+    text = text.replace("gen", "general")
+    text = text.replace("sto", "santo")
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+def viable(location, serviceable_list, threshold=85):
+    normalized_loc = normalize_location(location)
+    match = process.extractOne(normalized_loc, serviceable_list)
+
+    if match and match[1] >= threshold:
+        return "Yes"
+    else:
+        return "No"
+
+def tag_viable(df: pd.DataFrame) -> pd.DataFrame:
+    try:
+        municipalities_df = pd.read_csv("config/mgo_serviceable.csv")
+        municipalities_df['normalized'] = municipalities_df['municipality_name'].apply(normalize_location)
+        normalized_serviceable = municipalities_df['normalized'].dropna().unique().tolist()
+
+        df['viable'] = df['location'].apply(lambda loc: viable(loc, normalized_serviceable))
+        return df
+    except FileNotFoundError as e:
+        logging.info(f"File not found: {e}")
+    except Exception as e:
+        logging.info(f"Exception occurred while tagging viable locations: {e}")

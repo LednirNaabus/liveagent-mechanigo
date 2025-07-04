@@ -1,0 +1,69 @@
+municipality_id,province_id,municipality_name,is_serviceable,created_at,updated_at,nearest_hub_id,hub_name
+477,22,Angono,1,,,,
+478,22,City of Antipolo (Capital),1,,,,
+480,22,Binangonan,1,,,,
+481,22,Cainta,1,,,,
+484,22,Rodriguez,1,,,,
+487,22,San Mateo,1,,,,
+488,22,Tanay,1,,,,
+489,22,Taytay,1,,06/29/23 07:30,,
+362,18,City of Lipa,1,,06/29/23 07:30,3,Carmona
+352,18,Balete,1,,06/29/23 07:30,3,Carmona
+379,18,City of Tanauan,1,,06/29/23 07:30,3,Carmona
+378,18,Talisay,1,,06/29/23 07:30,3,Carmona
+376,18,City of Sto. Tomas,1,,06/29/23 07:30,3,Carmona
+365,18,Malvar,1,,06/29/23 07:30,3,Carmona
+389,19,General Emilio Aguinaldo,1,,,4,Dasmarinas
+394,19,Magallanes,1,,,4,Dasmarinas
+395,19,Maragondon,1,,,4,Dasmarinas
+403,19,Ternate,1,,,4,Dasmarinas
+402,19,Tanza,1,,,4,Dasmarinas
+490,22,Teresa,1,,,,
+482,22,Cardona,1,,,,
+1357,1,Malabon City,1,,,1,Makati
+1363,1,Parañaque City,1,,,2,Sucat
+1362,1,Muntinlupa City,1,,,2,Sucat
+1360,1,Las Piñas City,1,,,2,Sucat
+1359,1,Valenzuela City,1,,,1,Makati
+1355,1,San Juan City,1,,,1,Makati
+1366,1,Taguig City,1,,,1,Makati
+1354,1,Quezon City,1,,,1,Makati
+1365,1,Pateros,1,,,1,Makati
+1353,1,Pasig City,1,,,1,Makati
+1364,1,Pasay City,1,,,1,Makati
+1352,1,Marikina City,1,,,1,Makati
+1350,1,Manila,1,,,1,Makati
+1351,1,Mandaluyong City,1,,,1,Makati
+1358,1,Navotas City,1,,,1,Makati
+1361,1,Makati City,1,,,1,Makati
+1356,1,Caloocan City,1,,,1,Makati
+411,20,Calauan,1,,,3,Carmona
+433,20,City of Santa Rosa,1,,,3,Carmona
+430,20,City of San Pedro,1,,,3,Carmona
+416,20,Los Baños,1,,,3,Carmona
+410,20,City of Calamba,1,,,3,Carmona
+409,20,City of Cabuyao,1,,,3,Carmona
+408,20,City of Biñan,1,,,3,Carmona
+407,20,Bay,1,,,3,Carmona
+404,19,City of Trece Martires (Capital),1,,,4,Dasmarinas
+401,19,City of Tagaytay,1,,,4,Dasmarinas
+400,19,Silang,1,,,4,Dasmarinas
+399,19,Rosario,1,,,4,Dasmarinas
+398,19,Noveleta,1,,,4,Dasmarinas
+397,19,Naic,1,,,4,Dasmarinas
+396,19,Mendez,1,,,4,Dasmarinas
+393,19,Kawit,1,,,4,Dasmarinas
+392,19,Indang,1,,,4,Dasmarinas
+391,19,City of Imus,1,,,4,Dasmarinas
+390,19,City of General Trias,1,,,4,Dasmarinas
+405,19,Gen. Mariano Alvarez,1,,06/29/23 07:30,4,Dasmarinas
+388,19,City of Dasmariñas,1,,,4,Dasmarinas
+387,19,City of Cavite,1,,06/29/23 07:30,4,Dasmarinas
+386,19,Carmona,1,,,4,Dasmarinas
+385,19,City of Bacoor,1,,,4,Dasmarinas
+384,19,Amadeo,1,,,4,Dasmarinas
+383,19,Alfonso,1,,,4,Dasmarinas
+244,12,Obando,1,,,5,Bulacan
+241,12,Marilao,1,,,5,Bulacan
+1637,12,Meycauayan,1,01/31/25 21:48,01/31/25 21:48,,
+1638,12,San Jose del Monte City,1,01/31/25 21:49,01/31/25 21:49,,

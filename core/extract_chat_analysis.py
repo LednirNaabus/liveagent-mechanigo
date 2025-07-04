@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from core.convodataextract import ConvoDataExtract
 from utils.bq_utils import sql_query_bq, generate_schema, load_data_to_bq, create_table_bq
-from utils.geocoding_utils import geocode
+from utils.geocoding_utils import geocode, tag_viable
 from utils.df_utils import drop_cols
 from utils.date_utils import set_timezone, format_date_col
 from config import config
@@ -145,6 +145,8 @@ def extract_and_load_chat_analysis(table_name: str):
         geolocation = process_address(ticket_messages_df)
         logging.info(f"Head: {geolocation.head()}")
         ticket_messages_df = pd.concat([ticket_messages_df, geolocation], axis=1)
+        # Add 'viable' column
+        ticket_messages_df = tag_viable(ticket_messages_df)
         # Dropping columns that are not needed
         ticket_messages_df = drop_cols(ticket_messages_df, "score", "input_address", "lat", "lng", "error")
         merge(table_name, ticket_messages_df)
