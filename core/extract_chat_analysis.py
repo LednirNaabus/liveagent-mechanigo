@@ -80,7 +80,7 @@ def merge(table_name: str, df: pd.DataFrame) -> None:
         'service_category', 'summary', 'intent_rating', 'engagement_rating', 'clarity_rating',
         'resolution_rating', 'sentiment_rating', 'location', 'schedule_date', 'schedule_time',
         'car', 'inspection', 'quotation', 'tokens', 'date_extracted',
-        'address'
+        'address', 'viable'
     ]
     all_columns = ['ticket_id'] + columns
     update_set_clause = ',\n    '.join([f"{col} = source.{col}" for col in columns])
