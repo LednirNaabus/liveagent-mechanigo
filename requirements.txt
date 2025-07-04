@@ -16,6 +16,7 @@ email_validator
 fastapi
 fastapi-cli
 frozenlist
+fuzzywuzzy
 google-api-core
 google-auth
 google-cloud-bigquery
