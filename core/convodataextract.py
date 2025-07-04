@@ -3,7 +3,7 @@ import logging
 import tiktoken
 from typing import Dict
 from pydantic import BaseModel
-from openai import OpenAI, AuthenticationError, OpenAIError
+from openai import AsyncOpenAI, AuthenticationError, OpenAIError
 from utils.bq_utils import sql_query_bq
 from config import config
 
@@ -42,19 +42,38 @@ class ConvoDataExtract:
             self,
             ticket_id: str = None,
             api_key: str = None,
-            temperature: int = 0.8
+            temperature: float = 0.8
     ):
-        self.client = self.create_client(api_key=api_key)
+        # self.client = self.create_client(api_key=api_key)
+        # self.model = 'gpt-4.1-mini'
+        # self.temperature = temperature
+        # self.ticket_id = ticket_id
+        # if self.ticket_id:
+        #     self.conversation_text = self.get_convo_str(ticket_id)
+        # self.prompt = config.PROMPT.format(conversation_text=self.conversation_text)
+        # if self.conversation_text:
+        #     self.data = self.analyze_convo()
+        self.client = None
         self.model = 'gpt-4.1-mini'
         self.temperature = temperature
         self.ticket_id = ticket_id
-        if self.ticket_id:
-            self.conversation_text = self.get_convo_str(ticket_id)
-        self.prompt = config.PROMPT.format(conversation_text=self.conversation_text)
-        if self.conversation_text:
-            self.data = self.analyze_convo()
+        self.prompt = None
+        self.data = None
+        self.conversation_text = None
+        self.api_key = api_key
 
-    def create_client(self, api_key: str = None) -> OpenAI:
+    @classmethod
+    async def create(cls, ticket_id: str = None, api_key: str = None, temperature: float = 0.8):
+        self = cls(ticket_id=ticket_id, api_key=api_key, temperature=temperature)
+        self.client = await self.create_client(api_key)
+        if ticket_id:
+            self.conversation_text = self.get_convo_str(ticket_id)
+            self.prompt = config.PROMPT.format(conversation_text=self.conversation_text)
+        if self.conversation_text:
+            self.data = await self.analyze_convo()
+        return self
+
+    async def create_client(self, api_key: str = None) -> AsyncOpenAI:
         key_sources = [
             ("provided", api_key),
             ("env", config.OPENAI_API_KEY)
@@ -63,15 +82,15 @@ class ConvoDataExtract:
             if not key:
                 continue
             try:
-                client = OpenAI(api_key=key)
-                client.models.list()
+                client = AsyncOpenAI(api_key=key)
+                await client.models.list()
                 logging.info(f"OpenAI client initialized using {source} key.")
                 return client
             except (AuthenticationError, OpenAIError) as e:
                 logging.error(f"Failed with {source} key: {e}")
                 continue
     
-    def analyze_convo(self) -> Dict:
+    async def analyze_convo(self) -> Dict:
         if not self.prompt:
             raise Exception('Prompt not specified.')
 
@@ -83,7 +102,7 @@ class ConvoDataExtract:
         ]
 
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = await self.client.beta.chat.completions.parse(
                 model=self.model,
                 messages=messages,
                 response_format=self.ResponseSchema

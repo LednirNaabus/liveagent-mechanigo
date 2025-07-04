@@ -1,4 +1,5 @@
 import time
+import asyncio
 import logging
 import traceback
 import pandas as pd
@@ -12,22 +13,33 @@ from config import config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-def process_chat(ticket_ids: pd.Series):
-    rows = []
+async def process_single_chat(ticket_id: str, date_extracted: str, semaphore: asyncio.Semaphore) -> pd.DataFrame:
+    async with semaphore:
+        try:
+            logging.info(f"Ticket ID: {ticket_id}")
+            processor = await ConvoDataExtract.create(ticket_id, api_key=config.OPENAI_API_KEY)
+            tokens = processor.data.get('tokens')
+            new_df = pd.DataFrame([processor.data.get('data')])
+            tokens_df = pd.DataFrame([tokens], columns=['tokens'])
+            combined = pd.concat([new_df, tokens_df], axis=1)
+            combined['date_extracted'] = date_extracted
+            combined['date_extracted'] = pd.to_datetime(combined['date_extracted'], errors='coerce')
+            combined = set_timezone(combined, "date_extracted", target_tz=config.MNL_TZ)
+            combined.insert(0, 'ticket_id', ticket_id)
+            return combined
+        except Exception as e:
+            logging.error(f"Exception occurred while processing single chat: {e}")
+            return pd.DataFrame()
+
+async def process_chat(ticket_ids: pd.Series):
     date_extracted = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")
-    for ticket_id in ticket_ids['ticket_id']:
-        logging.info(f"Ticket ID: {ticket_id}")
-        processor = ConvoDataExtract(ticket_id, api_key=config.OPENAI_API_KEY)
-        tokens = processor.data.get('tokens')
-        new_df = pd.DataFrame([processor.data.get('data')])
-        tokens_df = pd.DataFrame([tokens], columns=['tokens'])
-        combined = pd.concat([new_df, tokens_df], axis=1)
-        combined['date_extracted'] = date_extracted
-        combined['date_extracted'] = pd.to_datetime(combined['date_extracted'], errors='coerce')
-        combined = set_timezone(combined, "date_extracted", target_tz=config.MNL_TZ)
-        combined.insert(0, 'ticket_id', ticket_id)
-        rows.append(combined)
-    return pd.concat(rows, ignore_index=True)
+    semaphore = asyncio.Semaphore(5)
+    tasks = [
+        process_single_chat(ticket_id, date_extracted, semaphore)
+        for ticket_id in ticket_ids['ticket_id']
+    ]
+    results = await asyncio.gather(*tasks)
+    return pd.concat(results, ignore_index=True)
 
 def process_address(df: pd.Series):
     locations = []
@@ -103,7 +115,7 @@ def merge(table_name: str, df: pd.DataFrame) -> None:
     drop = """DROP TABLE `{}.{}.{}`""".format(config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME, staging_table)
     sql_query_bq(drop, return_data=False)
 
-def extract_and_load_chat_analysis(table_name: str):
+async def extract_and_load_chat_analysis(table_name: str):
     try:
         # Date filtering
         now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
@@ -138,7 +150,7 @@ def extract_and_load_chat_analysis(table_name: str):
         logging.info(f"DF: {results}")
         logging.info(f"DF['ticket_id']: {results['ticket_id']}")
         start_time = time.perf_counter()
-        ticket_messages_df = process_chat(ticket_ids=results)
+        ticket_messages_df = await process_chat(ticket_ids=results)
         logging.info("Done processing chats.")
         logging.info(f"Head: {ticket_messages_df.head()}")
         logging.info("Finding geolocation...")

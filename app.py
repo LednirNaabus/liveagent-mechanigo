@@ -198,9 +198,9 @@ async def update_ticket_messages(
         })
 
 @app.post("/mechanigo-liveagent/update-chat-analysis/{table_name}")
-def update_chat_analysis(table_name: str):
+async def update_chat_analysis(table_name: str):
     try:
-        chat_analysis = extract_and_load_chat_analysis(table_name)
+        chat_analysis = await extract_and_load_chat_analysis(table_name)
         if chat_analysis is None:
             logging.info("No chat data to process.")
             return JSONResponse(content={
