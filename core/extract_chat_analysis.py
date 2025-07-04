@@ -115,23 +115,43 @@ def merge(table_name: str, df: pd.DataFrame) -> None:
     drop = """DROP TABLE `{}.{}.{}`""".format(config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME, staging_table)
     sql_query_bq(drop, return_data=False)
 
+def query_tickets() -> tuple:
+    # Date filtering
+    now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
+    date = now - pd.Timedelta(hours=6)
+    start = date.floor('h')
+    end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
+    start_str = start.strftime("%Y-%m-%d %H:%M:%S")
+    end_str = end.strftime("%Y-%m-%d %H:%M:%S")
+    # Querying
+    query = f"""
+    SELECT
+    DISTINCT ticket_id
+    FROM {config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.messages
+    WHERE message_format = 'T'
+        AND datecreated BETWEEN '{start_str}' AND '{end_str}'
+    """
+    return query, start_str, end_str
+
+async def chat_analysis(results: pd.DataFrame) -> pd.DataFrame:
+    logging.info(f"DF: {results}")
+    logging.info(f"DF['ticket_id']: {results['ticket_id']}")
+    ticket_messages_df = await process_chat(ticket_ids=results)
+    logging.info("Done processing chats.")
+    logging.info(f"Head: {ticket_messages_df.head()}")
+    logging.info("Finding geolocation...")
+    geolocation = process_address(ticket_messages_df)
+    logging.info(f"Head: {geolocation.head()}")
+    ticket_messages_df = pd.concat([ticket_messages_df, geolocation], axis=1)
+    # Add 'viable' column
+    ticket_messages_df = tag_viable(ticket_messages_df)
+    # Dropping columns that are not needed
+    ticket_messages_df = drop_cols(ticket_messages_df, "score", "input_address", "lat", "lng", "error")
+    return ticket_messages_df
+
 async def extract_and_load_chat_analysis(table_name: str):
     try:
-        # Date filtering
-        now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
-        date = now - pd.Timedelta(hours=6)
-        start = date.floor('h')
-        end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
-        start_str = start.strftime("%Y-%m-%d %H:%M:%S")
-        end_str = end.strftime("%Y-%m-%d %H:%M:%S")
-        # Querying
-        query = f"""
-        SELECT
-        DISTINCT ticket_id
-        FROM {config.GCLOUD_PROJECT_ID}.{config.BQ_DATASET_NAME}.messages
-        WHERE message_format = 'T'
-            AND datecreated BETWEEN '{start_str}' AND '{end_str}'
-        """
+        query, start_str, end_str = query_tickets()
         logging.info(f"Querying using: {query}")
 
         # Handle case where query results is None
@@ -147,20 +167,8 @@ async def extract_and_load_chat_analysis(table_name: str):
             return None
 
         # Processing
-        logging.info(f"DF: {results}")
-        logging.info(f"DF['ticket_id']: {results['ticket_id']}")
         start_time = time.perf_counter()
-        ticket_messages_df = await process_chat(ticket_ids=results)
-        logging.info("Done processing chats.")
-        logging.info(f"Head: {ticket_messages_df.head()}")
-        logging.info("Finding geolocation...")
-        geolocation = process_address(ticket_messages_df)
-        logging.info(f"Head: {geolocation.head()}")
-        ticket_messages_df = pd.concat([ticket_messages_df, geolocation], axis=1)
-        # Add 'viable' column
-        ticket_messages_df = tag_viable(ticket_messages_df)
-        # Dropping columns that are not needed
-        ticket_messages_df = drop_cols(ticket_messages_df, "score", "input_address", "lat", "lng", "error")
+        ticket_messages_df = await chat_analysis(results)
         merge(table_name, ticket_messages_df)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
