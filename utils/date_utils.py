@@ -51,3 +51,11 @@ def format_date_col(df: pd.DataFrame, *columns: str, format: str = "%Y-%m-%d %H:
     for column in columns:
         df[column] = df[column].dt.strftime(format)
     return df
+
+def get_start_end_str(date: pd.Timestamp):
+    date = date - pd.Timedelta(hours=6)
+    start = date.floor('h')
+    end = start + pd.Timedelta(hours=6) - pd.Timedelta(seconds=1)
+    start_str = start.strftime("%Y-%m-%d %H:%M:%S")
+    end_str = end.strftime("%Y-%m-%d %H:%M:%S")
+    return start_str, end_str

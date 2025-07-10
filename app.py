@@ -6,18 +6,43 @@ from typing import Optional
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from config import config
-from utils.date_utils import FilterField
+from utils.date_utils import FilterField, set_timezone
 from utils.extract_utils import initial_extract, scheduled_extract
-from utils.bq_utils import sql_query_bq
+from utils.bq_utils import sql_query_bq, generate_schema, load_data_to_bq
 from core.extract_tags import extract_and_load_tags
 from core.extract_tickets import extract_and_load_tickets, extract_and_load_ticket_messages
 from core.extract_agents import extract_and_load_agents
 from core.extract_users import extract_and_load_users
 from core.extract_chat_analysis import extract_and_load_chat_analysis
+from core.extraction_log import extract_and_load_logs
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 app = FastAPI()
+
+def record_start_time(now: pd.Timestamp):
+    start_time_log = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")
+    logging.info(f"Start Time: {start_time_log}")
+    now_df = pd.DataFrame({
+        "batch_date": [now.date().isoformat()],
+        "start_timestamp": [start_time_log]
+    })
+    now_df["start_timestamp"] = pd.to_datetime(now_df["start_timestamp"], errors="coerce")
+    now_df = set_timezone(
+        now_df,
+        "start_timestamp",
+        target_tz=config.MNL_TZ
+    )
+    logging.info("Generating schema and loading data into BigQuery...")
+    schema = generate_schema(now_df)
+    load_data_to_bq(
+        now_df,
+        config.GCLOUD_PROJECT_ID,
+        config.BQ_DATASET_NAME,
+        "extraction_metadata",
+        "WRITE_APPEND",
+        schema
+    )
 
 @app.get("/")
 def root():
@@ -154,6 +179,8 @@ async def update_tickets(
             now = pd.Timestamp.now(tz="UTC").astimezone(config.MNL_TZ)
             date = now - pd.Timedelta(hours=6)
             logging.info(f"Date and time of execution: {date}")
+            # Record start time - for logging
+            record_start_time(now=now)
             tickets = await extract_and_load_tickets(date, table_name, filter_field=FilterField.DATE_CHANGED)
         return JSONResponse(tickets)
     except Exception as e:
@@ -210,6 +237,19 @@ async def update_chat_analysis(table_name: str):
         return JSONResponse(chat_analysis)
     except Exception as e:
         logging.error(f"Exception occured while updating chat analysis: {e}")
+        return JSONResponse(content={
+            'error': str(e),
+            'status': 'error'
+        })
+
+@app.post("/mechanigo-liveagent/extract-logs/{table_name}")
+async def extract_log(table_name: str):
+    try:
+        now = pd.Timestamp.now(tz=config.MNL_TZ)
+        logs = extract_and_load_logs(now, table_name)
+        return JSONResponse(logs)
+    except Exception as e:
+        logging.error(f"Exception occurred while extracting logs: {e}")
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'

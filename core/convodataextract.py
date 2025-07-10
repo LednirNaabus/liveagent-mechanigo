@@ -44,15 +44,6 @@ class ConvoDataExtract:
             api_key: str = None,
             temperature: float = 0.8
     ):
-        # self.client = self.create_client(api_key=api_key)
-        # self.model = 'gpt-4.1-mini'
-        # self.temperature = temperature
-        # self.ticket_id = ticket_id
-        # if self.ticket_id:
-        #     self.conversation_text = self.get_convo_str(ticket_id)
-        # self.prompt = config.PROMPT.format(conversation_text=self.conversation_text)
-        # if self.conversation_text:
-        #     self.data = self.analyze_convo()
         self.client = None
         self.model = 'gpt-4.1-mini'
         self.temperature = temperature
