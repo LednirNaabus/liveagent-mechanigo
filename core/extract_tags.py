@@ -7,11 +7,6 @@ from core.liveagent import LiveAgentClient
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 async def extract_and_load_tags(table_name: str):
-    """
-    Function to extract and load tags to BigQuery.
-
-    Calls `fetch_tags()` from the `LiveAgentClient` class.
-    """
     try:
         async with LiveAgentClient(config.API_KEY) as client:
             success, response = await client.ping()

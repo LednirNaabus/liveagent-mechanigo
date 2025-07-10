@@ -10,8 +10,6 @@ from utils.bq_utils import generate_schema, load_data_to_bq, sql_query_bq, creat
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 100) -> list[dict[str, Any]]:
-    """
-    """
     filters = set_filter(date, filter_field=filter_field)
     ticket_payload = {
         "_perPage": per_page,
@@ -123,11 +121,6 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
             raise
 
 async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name: str, per_page: int = 10):
-    """
-    Accepts an SQL Query - with or without a date filter
-    Fetches the query (id, owner_name, agentid)
-    Processes each ticket and gets the ticket message
-    """
     tickets_data = {
         "id": tickets_df['id'].tolist(),
         "owner_name": tickets_df['owner_name'].tolist(),

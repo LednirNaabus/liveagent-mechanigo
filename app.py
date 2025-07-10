@@ -1,8 +1,9 @@
 import os
+import json
 import logging
 import traceback
 import pandas as pd
-from typing import Optional
+from typing import Optional, List, Dict
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from config import config
@@ -17,8 +18,46 @@ from core.extract_chat_analysis import extract_and_load_chat_analysis
 from core.extraction_log import extract_and_load_logs
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+ERROR_FILE = 'route_errors.json'
+route_errors = []
+
+def load_errors() -> List[Dict]:
+    if os.path.exists(ERROR_FILE):
+        try:
+            with open(ERROR_FILE, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            return []
+    return []
+
+def save_errors(errors: List[Dict]):
+    try:
+        with open(ERROR_FILE, 'w') as f:
+            json.dump(errors, f, default=str)
+    except Exception as e:
+        logger.error(f"Failed to save errors: {e}")
+
+def add_error(route_name: str, error: Exception):
+    errors = load_errors()
+    error_info = {
+        "route": route_name,
+        "error_type": type(error).__name__,
+        "error_message": str(error)
+    }
+    errors.append(error_info)
+    save_errors(errors)
+    logger.error(f"Error in {route_name}: {error}")
+
+def get_and_clear_errorrs() -> List[Dict]:
+    errors = load_errors()
+    if os.path.exists(ERROR_FILE):
+        os.remove(ERROR_FILE)
+
+    return errors
 
 def record_start_time(now: pd.Timestamp):
     start_time_log = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")
@@ -46,36 +85,10 @@ def record_start_time(now: pd.Timestamp):
 
 @app.get("/")
 def root():
-    """
-    Home root path - for testing purposes.
-    """
     return {"message": "Hello World!"}
 
 @app.post("/mechanigo-liveagent/update-agents/{table_name}")
 async def update_agents(table_name: str):
-    """
-    End point to update and fetch agents from the LiveAgent API on a daily basis (will be run by a cloud scheduler).
-
-    This endpoint performs the following actions:
-    1. Retrieves the agents from the LiveAgent API via the `/agents` endpoint.
-    2. Loads the fetched agents data into a specified BigQuery table.
-
-    The `table_name` parameter is used to determine which BigQuery table the data should be loaded into.
-
-    Returns:
-
-        - A JSON response containing the fetched agents data if successful.
-
-        - A JSON response with an error message and status if an exception occurs during the process.
-
-    Args:
-
-        - `table_name` (`str`) : The name of the BigQuery table where the agents data will be stored.
-
-    Raises:
-
-        Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
-    """
     try:
         logging.info("Extracting and loading agents...")
         agents = await extract_and_load_agents(table_name)
@@ -89,27 +102,6 @@ async def update_agents(table_name: str):
 
 @app.post("/mechanigo-liveagent/update-users/{table_name}")
 async def update_users(table_name: str):
-    """
-    Endpoint to update and fetch users from the LiveAgent API (used in development and testing only). See `core.liveagent.py` for extraction and loading of users.
-
-    This endpoint performs the following actions:
-    1. Retrieves the users data from the LiveAgent API via the `/users/{userID}` endpoint.
-    2. Loads the fetched users data into a specified BigQuery table.
-
-    Returns:
-    
-        - A JSON response containing the fetched users if successful.
-
-        - A JSON response with an error message and status if an exception occurs during the process.
-
-    Args:
-
-        `table_name` (`str`) : The name of the BigQuery table where the data will be stored.
-    
-    Raises:
-
-        Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
-    """
     try:
         logging.info("Extracting and loading users...")
         users = await extract_and_load_users(table_name)
@@ -123,26 +115,6 @@ async def update_users(table_name: str):
 
 @app.post("/mechanigo-liveagent/update-tags/{table_name}")
 async def update_tags(table_name: str):
-    """
-    Endpoint to update and fetch tags from the LiveAgent API on a daily basis (will be run by a cloud scheduler).
-
-    This endpoint performs the following actions:
-    1. Retrieves the tags data from the LiveAgent API via the `/tags` endpoint.
-    2. Loads the fetched tags data into a specified BigQuery table.
-
-    Returns:
-
-        - A JSON response containing the fetched tags data if successful.
-
-        - A JSON response with an error message and status if an exception occurs during the process.
-
-    Args:
-        `table_name` (`str`) : The name of the BigQuery table where the tags data will be stored.
-    
-    Raises:
-
-        Exception: Any error encountered during the extraction or loading process will be captured and returned in the response.
-    """
     try:
         tags = await extract_and_load_tags(table_name)
         return JSONResponse(tags)
@@ -159,13 +131,6 @@ async def update_tickets(
     is_initial: bool = Query(False),
     date: Optional[str] = Query(None, description="Optional date in YYYY-MM-DD format. **Important**: Date should be start of month (i.e., 2025-01-01, or 2025-12-01, etc.)")
 ):
-    """
-    Endpoint to update and fetch tickets from the LiveAgent API on a daily basis (wll be run by a cloud scheduler).
-
-    This endpoint performs the following actions:
-    1. Retrieves the tickets data from the LiveAgent API via the `/tickets` endpoint.
-    2. Loads the fetched tickets data into a specified BigQuery table.
-    """
     try:
         if is_initial:
             logging.info("Running initial ticket extraction...")
@@ -185,6 +150,7 @@ async def update_tickets(
         return JSONResponse(tickets)
     except Exception as e:
         logging.error(f"Exception occured while updating tickets: {e}")
+        add_error("/update-tickets", e)
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'
@@ -196,8 +162,6 @@ async def update_ticket_messages(
     is_initial: bool = Query(False),
     date: Optional[str] = Query(None, description="Date you want to extract (YYYY-MM-DD).")
 ):
-    """
-    """
     try:
         tickets_table_name = "tickets"
         if is_initial:
@@ -218,6 +182,7 @@ async def update_ticket_messages(
         return JSONResponse(messages)
     except Exception as e:
         logging.error(f"Exception occurred while updating ticket messsages: {e}")
+        add_error("/update-ticket-messages", e)
         traceback.print_exc()
         return JSONResponse(content={
             'error': str(e),
@@ -237,6 +202,7 @@ async def update_chat_analysis(table_name: str):
         return JSONResponse(chat_analysis)
     except Exception as e:
         logging.error(f"Exception occured while updating chat analysis: {e}")
+        add_error("/update-chat-analysis", e)
         return JSONResponse(content={
             'error': str(e),
             'status': 'error'
@@ -246,7 +212,10 @@ async def update_chat_analysis(table_name: str):
 async def extract_log(table_name: str):
     try:
         now = pd.Timestamp.now(tz=config.MNL_TZ)
-        logs = extract_and_load_logs(now, table_name)
+        collected_errors = get_and_clear_errorrs()
+        logging.info(f"Extracting logs...")
+        route_errors.clear() # clear global list for next cycle
+        logs = extract_and_load_logs(now, table_name, errors=collected_errors)
         return JSONResponse(logs)
     except Exception as e:
         logging.error(f"Exception occurred while extracting logs: {e}")

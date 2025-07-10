@@ -59,7 +59,7 @@ def get_total_tokens(date: pd.Timestamp):
     # Get total tokens from run
     query = """
     SELECT model, SUM(tokens) AS total_tokens
-    FROM {}.{}.analysis_test
+    FROM {}.{}.convo_analysis
     WHERE date_extracted >= '{}' AND date_extracted < '{}'
     GROUP BY model
     """.format(config.GCLOUD_PROJECT_ID, config.BQ_DATASET_NAME, start_str, end_str)
@@ -80,54 +80,61 @@ def get_runtime(date: pd.Timestamp):
     start_time = res.iloc[0,0].replace(tzinfo=config.MNL_TZ)
     return round((date - start_time).total_seconds(), 2) if not res.empty else None
 
-def extract_and_load_logs(date: pd.Timestamp, table_name: str):
-    logs_df = pd.DataFrame({
-        "extraction_date": [pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")]
-    })
-    logs_df["extraction_date"] = pd.to_datetime(logs_df["extraction_date"], errors="coerce")
-    logs_df = set_timezone(
-        logs_df,
-        "extraction_date",
-        target_tz=config.MNL_TZ
-    )
-    run_time = get_runtime(date)
-    logging.info(f"Date: {date}")
-    # Get existing ticket IDs
-    get_ticket_ids_from_run = get_from_run(date, Tables.TICKETS) # get ticket IDs from current run first
-    logging.info("Getting existing...")
-    existing_ticket_ids = get_existing(Tables.TICKETS)
-    logs_df["no_tickets_new"] = get_ticket_ids_from_run["id"].map(lambda ticket_id: ticket_id not in existing_ticket_ids).sum()
-    logs_df["no_tickets_update"] = get_ticket_ids_from_run["id"].map(lambda ticket_id: ticket_id in existing_ticket_ids).sum()
-    logs_df["no_tickets_total"] = logs_df["no_tickets_new"] + logs_df["no_tickets_update"]
-    # Get existing message IDs
-    get_message_ids_from_run = get_from_run(date, Tables.MESSAGES)
-    existing_message_ids = get_existing(Tables.MESSAGES)
-    logs_df["no_messages_new"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id not in existing_message_ids).sum()
-    logs_df["no_messages_old"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id in existing_message_ids).sum()
-    logs_df["no_messages_total"] = logs_df["no_messages_new"] + logs_df["no_messages_old"]
-    # Get total tokens
-    logging.info("Getting total tokens...")
-    logs_df["total_tokens"], logs_df["model"] = get_total_tokens(date)
-    # Get error messages here
-
-    logs_df["extraction_run_time"] = run_time
-    # Load to BigQuery
-    logging.info("Generating schema and loading data to BigQuery...")
-    schema = generate_schema(logs_df)
-    load_data_to_bq(
-        logs_df,
-        config.GCLOUD_PROJECT_ID,
-        config.BQ_DATASET_NAME,
-        table_name,
-        "WRITE_APPEND",
-        schema
-    )
-    logs_df = format_date_col(
-        logs_df,
-        "extraction_date"
-    )
-    logs_df["extraction_run_time"] = logs_df["extraction_run_time"].apply(
-        lambda x: str(timedelta(seconds=x.total_seconds()))
-    )
-    logs_df = fill_nan_values(logs_df)
-    return logs_df.to_dict(orient="records")
+def extract_and_load_logs(date: pd.Timestamp, table_name: str, errors: list):
+    try:
+        logs_df = pd.DataFrame({
+            "extraction_date": [pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")]
+        })
+        logs_df["extraction_date"] = pd.to_datetime(logs_df["extraction_date"], errors="coerce")
+        logs_df = set_timezone(
+            logs_df,
+            "extraction_date",
+            target_tz=config.MNL_TZ
+        )
+        run_time = get_runtime(date)
+        logging.info(f"Date: {date}")
+        # Get existing ticket IDs
+        get_ticket_ids_from_run = get_from_run(date, Tables.TICKETS) # get ticket IDs from current run first
+        logging.info("Getting existing...")
+        existing_ticket_ids = get_existing(Tables.TICKETS)
+        logs_df["no_tickets_new"] = get_ticket_ids_from_run["id"].map(lambda ticket_id: ticket_id not in existing_ticket_ids).sum()
+        logs_df["no_tickets_update"] = get_ticket_ids_from_run["id"].map(lambda ticket_id: ticket_id in existing_ticket_ids).sum()
+        logs_df["no_tickets_total"] = logs_df["no_tickets_new"] + logs_df["no_tickets_update"]
+        # Get existing message IDs
+        get_message_ids_from_run = get_from_run(date, Tables.MESSAGES)
+        existing_message_ids = get_existing(Tables.MESSAGES)
+        logs_df["no_messages_new"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id not in existing_message_ids).sum()
+        logs_df["no_messages_old"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id in existing_message_ids).sum()
+        logs_df["no_messages_total"] = logs_df["no_messages_new"] + logs_df["no_messages_old"]
+        # Get total tokens
+        logging.info("Getting total tokens...")
+        logs_df["total_tokens"], logs_df["model"] = get_total_tokens(date)
+        # Get error messages here
+        if errors:
+            logs_df["log_message"] = errors
+        else:
+            logs_df["log_message"] = "None"
+        logs_df["extraction_run_time"] = run_time
+        # Load to BigQuery
+        logging.info("Generating schema and loading data to BigQuery...")
+        schema = generate_schema(logs_df)
+        load_data_to_bq(
+            logs_df,
+            config.GCLOUD_PROJECT_ID,
+            config.BQ_DATASET_NAME,
+            table_name,
+            "WRITE_APPEND",
+            schema
+        )
+        logs_df = format_date_col(
+            logs_df,
+            "extraction_date"
+        )
+        logs_df["extraction_run_time"] = logs_df["extraction_run_time"].apply(
+            lambda x: str(timedelta(seconds=x.total_seconds()))
+        )
+        logs_df = fill_nan_values(logs_df)
+        return logs_df.to_dict(orient="records")
+    except Exception as e:
+        logging.error(f"Exception occurred during extraction and loading of logs: {e}")
+        raise
