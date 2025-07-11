@@ -154,6 +154,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                         target_tz=config.MNL_TZ
                     )
                     logging.info("Generating schema and loading data to BigQuery...")
+                    messages_df["sort_order"] = pd.to_numeric(messages_df["sort_order"], errors="coerce").fillna(0).astype(int)
                     schema = generate_schema(messages_df)
                     load_data_to_bq(
                         messages_df,
