@@ -103,8 +103,8 @@ def extract_and_load_logs(date: pd.Timestamp, table_name: str, errors: list):
         # Get existing message IDs
         get_message_ids_from_run = get_from_run(date, Tables.MESSAGES)
         existing_message_ids = get_existing(Tables.MESSAGES)
-        logs_df["no_messages_new"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id not in existing_message_ids).sum()
-        logs_df["no_messages_old"] = get_message_ids_from_run["ticket_id"].map(lambda msg_id: msg_id in existing_message_ids).sum()
+        logs_df["no_messages_new"] = get_message_ids_from_run["message_id"].map(lambda msg_id: msg_id not in existing_message_ids).sum()
+        logs_df["no_messages_old"] = get_message_ids_from_run["message_id"].map(lambda msg_id: msg_id in existing_message_ids).sum()
         logs_df["no_messages_total"] = logs_df["no_messages_new"] + logs_df["no_messages_old"]
         # Get total tokens
         logging.info("Getting total tokens...")
