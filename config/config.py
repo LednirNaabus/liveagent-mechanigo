@@ -129,6 +129,11 @@ Use the following rubrics for each score:
         - May I know where you're located po?
         - Saan po kayo nakatira?
         - San po kayo nakatira?
+    - Note that sometimes their location details is provided using a template like this:
+        Name:
+        Contact Number:
+        Exact Address (with Barangay):
+        - In this case extract only the "Exact Address (with Barangay)"
     - examples:
         - Sample St., 123 Building, Brgy. Olympia, Makati City
         - 1166 Chino Roces Avenue, Corner Estrella St, Makati City
@@ -175,9 +180,14 @@ Use the following rubrics for each score:
 
 12. **Contact Num**
     - type: str
-    - description: the customer or client's provided contact number details
+    - description: the customer or client's provided contact number details. Note that sometimes their contact details is provided using a template like this:
+        Name:
+        Contact Number:
+        Exact Address (with Barangay):
+        - In this case extract only the "Contact Number"
     - examples:
         - 0967123456
+        - Contact number: 0965123456
 
 13. **Payment**
     - type: str
