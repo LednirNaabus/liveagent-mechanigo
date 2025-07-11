@@ -145,20 +145,15 @@ def normalize_location(text: str):
     text = text.replace("gen", "general")
     text = text.replace("sto", "santo")
     text = re.sub(r'\s+', ' ', text).strip()
-    logging.info(f"text: {text}")
     return text
 
 def viable(location, serviceable_list, threshold=90):
     normalized_loc = normalize_location(location)
     match = process.extractOne(normalized_loc, serviceable_list)
 
-    logging.info(f"normalized_loc: {normalized_loc}")
-    logging.info(f"serviceable_list: {serviceable_list}")
     if match and match[1] >= threshold:
-        logging.info(f"match: {match}")
         return "Yes"
     else:
-        logging.info(f"match: {match}")
         return "No"
 
 def tag_viable(df: pd.DataFrame) -> pd.DataFrame:
