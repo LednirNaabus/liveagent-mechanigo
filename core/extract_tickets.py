@@ -1,3 +1,4 @@
+import re
 import logging
 import pandas as pd
 from typing import Any
@@ -8,6 +9,13 @@ from utils.date_utils import set_filter, set_timezone, format_date_col, FilterFi
 from utils.bq_utils import generate_schema, load_data_to_bq, sql_query_bq, create_table_bq
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+def extract_reference_code(message: str):
+    if message is None or pd.isna(message):
+        return "No Reference code"
+
+    match = re.search(r"Ref:\s*([A-Z0-9]+)\b", message)
+    return match.group(1) if match else "No Reference code"
 
 async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_field: FilterField = FilterField.DATE_CHANGED, per_page: int = 100) -> list[dict[str, Any]]:
     filters = set_filter(date, filter_field=filter_field)
@@ -155,6 +163,7 @@ async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name:
                         "datetime_extracted",
                         target_tz=config.MNL_TZ
                     )
+                    messages_df["reference_code"] = messages_df["message"].apply(extract_reference_code)
                     logging.info("Generating schema and loading data to BigQuery...")
                     messages_df["sort_order"] = pd.to_numeric(messages_df["sort_order"], errors="coerce").fillna(0).astype(int)
                     schema = generate_schema(messages_df)
