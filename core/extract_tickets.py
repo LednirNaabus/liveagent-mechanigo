@@ -121,6 +121,8 @@ async def extract_and_load_tickets(date: pd.Timestamp, table_name: str, filter_f
             raise
 
 async def extract_and_load_ticket_messages(tickets_df: pd.DataFrame, table_name: str, per_page: int = 10):
+    # TO DO:
+    # extract 'Ref: ' from messages (message_type='T')
     tickets_data = {
         "id": tickets_df['id'].tolist(),
         "owner_name": tickets_df['owner_name'].tolist(),

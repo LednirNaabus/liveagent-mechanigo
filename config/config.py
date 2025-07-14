@@ -28,6 +28,7 @@ GCLOUD_PROJECT_ID = GOOGLE_PROJ_INFO.get("BIGQUERY")['project_id']
 BQ_DATASET_NAME = GOOGLE_PROJ_INFO.get("BIGQUERY")['dataset_name']
 
 # For ConvoDataExtract
+# ADD-160: Tweak Prompt
 PROMPT="""
 You are a conversation analyst for Mechanigo.ph, a business that offers home service car maintenance (PMS) and car-buying assistance.
 
@@ -61,15 +62,28 @@ Use the following rubrics for each score:
         - No Intent, Low Intent, Moderate Intent, Hight Intent, Hot Intent
     - Guidelines:
         - **No Intent**:
-            - Customer never replies after 
+            - When the customer is just asking the price of a car
+            - There is no customer reply after first message by the service agent and if less than 1 of the following information is given:
+                - Vehicle details (brand, model, year, etc.)
+                - Service needed (from Service Category)
+                - Address or location
+                - Their contact number
+                - Tire brand, size, or quantity
         - **Low Intent**:
             - Customer only asks general inquiries such as:
-                - Price list
-                - Services offered
-                - Service areas
-                - Referral questions
+                - Vehicle details (brand, model, year, etc.)
+                - Service needed (from Service Category)
+                - Address or location
+                - Their contact number
+                - Tire brand, size, or quantity
+            - Customer provided at least 2 of the following information:
+                - Vehicle details (brand, model, year, etc.)
+                - Service needed (from Service Category)
+                - Address or location
+                - Their contact number
+                - Tire brand, size, or quantity
         - **Moderate Intent**:
-            - Customer provides at least 2 of the following:
+            - Customer provides at least 3 or more of the following:
                 - Vehicle details (brand, model, year, etc.)
                 - Service needed (from Service Category)
                 - Address or location

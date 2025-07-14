@@ -160,15 +160,22 @@ class LiveAgentClient:
             logging.error(f"Failed to load agents from '{self.BASE_URL}/agents': {e}")
             self.agents_cache = {}
 
+    # To do:
+    # (ADD-159)
+    # id = '00054iwg' -> Mechanigo.ph account(?)
+    # avatar_url = 'https://graph.facebook.com/v7.0'
     def determine_sender_receiver(self, userid: str, owner_name: str, agentid: str) -> tuple[str, str, str, str]:
         if userid == "system00":
             return "system", "system", owner_name, "client"
+
+        if userid == "00054iwg":
+            return "MechaniGo.ph", "system", owner_name, "client"
 
         if userid in self.agents_cache:
             agent_name = self.agents_cache[userid]
             return agent_name, "agent", owner_name, "client"
         else:
-            agent_name = self.agents_cache.get(agentid, "Unkown Agent")
+            agent_name = self.agents_cache.get(agentid, "Unknown Agent")
             return owner_name, "client", agent_name, "agent"
 
     def define_messages_schema(self):
