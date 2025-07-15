@@ -29,7 +29,7 @@ class Tables(StrEnum):
 
 def get_from_run(date: pd.Timestamp, table: Tables):
     if table == Tables.MESSAGES:
-        id = "DISTINCT ticket_id"
+        id = "DISTINCT ticket_id, message_id"
     else:
         id = "id"
 
