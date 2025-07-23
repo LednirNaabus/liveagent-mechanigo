@@ -159,7 +159,7 @@ Use the following rubrics for each score:
     - type: str
     - description: client's appointment schedule date. Infer from context (e.g., "bukas" -> tomorrow)
     - format: YYYY-MM-DD
-    - Use the current date as the reference when interpreting relative dates like "bukas" or "next week". Assume today's date is {current_date}.
+    - Assume today's date is {current_date}. Use this to infer relative dates like "bukas", "next week", "sa Sabado", etc.
     - examples:
         - 2025-01-01 
         - Jan 1, 2025
