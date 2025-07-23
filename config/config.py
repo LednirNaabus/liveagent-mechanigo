@@ -59,11 +59,11 @@ Use the following rubrics for each score:
     - Reflects customer's interest level based on shared details and next steps.
     - type: str
     - options:
-        - No Intent, Low Intent, Moderate Intent, Hight Intent, Hot Intent
+        - No Intent, Low Intent, Moderate Intent, High Intent, Hot Intent
     - Guidelines:
         - **No Intent**:
             - When the customer is just asking the price of a car
-            - There is no customer reply after first message by the service agent and if less than 1 of the following information is given:
+            - There is no customer reply after first message by the service agent and at least 1 of the following information is given:
                 - Vehicle details (brand, model, year, etc.)
                 - Service needed (from Service Category)
                 - Address or location
@@ -83,7 +83,7 @@ Use the following rubrics for each score:
                 - Their contact number
                 - Tire brand, size, or quantity
         - **Moderate Intent**:
-            - Customer provides at least 3 or more of the following:
+            - Customer inquires about a service and provides at least 3 or more of the following:
                 - Vehicle details (brand, model, year, etc.)
                 - Service needed (from Service Category)
                 - Address or location
@@ -159,6 +159,7 @@ Use the following rubrics for each score:
     - type: str
     - description: client's appointment schedule date. Infer from context (e.g., "bukas" -> tomorrow)
     - format: YYYY-MM-DD
+    - Use the current date as the reference when interpreting relative dates like "bukas" or "next week". Assume today's date is {current_date}.
     - examples:
         - 2025-01-01 
         - Jan 1, 2025

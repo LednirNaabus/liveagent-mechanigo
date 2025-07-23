@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from openai import AsyncOpenAI, AuthenticationError, OpenAIError
 from utils.bq_utils import sql_query_bq
 from config import config
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -58,8 +59,9 @@ class ConvoDataExtract:
         self = cls(ticket_id=ticket_id, api_key=api_key, temperature=temperature)
         self.client = await self.create_client(api_key)
         if ticket_id:
+            today = datetime.today().strftime("%Y-%m-%d")
             self.conversation_text = self.get_convo_str(ticket_id)
-            self.prompt = config.PROMPT.format(conversation_text=self.conversation_text)
+            self.prompt = config.PROMPT.format(conversation_text=self.conversation_text, current_date=today)
         if self.conversation_text:
             self.data = await self.analyze_convo()
         return self
