@@ -63,7 +63,7 @@ Use the following rubrics for each score:
     - Guidelines:
         - **No Intent**:
             - When the customer is just asking the price of a car
-            - There is no customer reply after first message by the service agent and at least 1 of the following information is given:
+            - There is no customer reply after first message by the service agent and just 1 of the following information is given:
                 - Vehicle details (brand, model, year, etc.)
                 - Service needed (from Service Category)
                 - Address or location
