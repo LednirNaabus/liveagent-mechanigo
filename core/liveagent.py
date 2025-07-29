@@ -154,7 +154,7 @@ class LiveAgentClient:
         try:
             agents_data = await self.agent.get_agents(max_pages=10)
             for agent in agents_data:
-                self.agents_cache[agent['id']] = agent.get('name', agent.get('name', 'Unknown'))
+                self.agents_cache[agent['id']] = agent.get('name', 'Unknown')
             logging.info(f"Loaded {len(self.agents_cache)} agents from '{self.BASE_URL}/agents'")
         except Exception as e:
             logging.error(f"Failed to load agents from '{self.BASE_URL}/agents': {e}")
